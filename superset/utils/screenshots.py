@@ -262,6 +262,31 @@ class DashboardScreenshot(BaseScreenshot):
         self.window_size = window_size or DEFAULT_DASHBOARD_WINDOW_SIZE
         self.thumb_size = thumb_size or DEFAULT_DASHBOARD_THUMBNAIL_SIZE
 
+    # def get_screenshot(
+    #     self, user: User, window_size: WindowSize | None = None
+    # ) -> bytes | None:
+    #     driver = self.driver(window_size)
+
+    #     if self.window_size[1] is None:
+    #         logger.info("Window height not provided, calculating dynamically...")
+    #         driver.get(self.url)
+
+    #         if isinstance(driver, WebDriverSelenium):
+    #             page_height = driver.execute_script("return document.body.scrollHeight")
+    #             driver.set_window_size(self.window_size[0], page_height)
+    #         elif isinstance(driver, WebDriverPlaywright):
+    #             page_height = driver.page.evaluate("document.body.scrollHeight")
+    #             driver.page.set_viewport_size({"width": self.window_size[0], "height": page_height})
+    #         else:
+    #             raise RuntimeError("Unsupported WebDriver type")
+
+    #         logger.info("Calculated page height: %s", page_height)
+    #         self.window_size = (self.window_size[0], page_height)
+
+    #     with event_logger.log_context("screenshot", screenshot_url=self.url):
+    #         self.screenshot = driver.get_screenshot(self.url, self.element, user)
+    #     return self.screenshot
+    
     def cache_key(
         self,
         window_size: bool | WindowSize | None = None,
