@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import moment from 'moment';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
 import {
   ChartProps,
   getMetricLabel,
@@ -33,9 +34,11 @@ import {
 
 import { getOriginalLabel } from '../utils';
 
+dayjs.extend(utc);
+
 export const parseMetricValue = (metricValue: number | string | null) => {
   if (typeof metricValue === 'string') {
-    const dateObject = moment.utc(metricValue, moment.ISO_8601, true);
+    const dateObject = dayjs.utc(metricValue, undefined, true);
     if (dateObject.isValid()) {
       return dateObject.valueOf();
     }

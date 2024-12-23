@@ -39,13 +39,14 @@ import getOwnerName from 'src/utils/getOwnerName';
 import { findPermission } from 'src/utils/findPermission';
 import { useSelector } from 'react-redux';
 import { RootState } from 'src/dashboard/types';
+import { ConfigType } from 'dayjs';
 
 interface TaggedObject {
   id: number;
   type: string;
   name: string;
   url: string;
-  changed_on: moment.MomentInput;
+  changed_on: ConfigType;
   created_by: number | undefined;
   creator: string;
   owners: Owner[];
