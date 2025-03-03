@@ -263,7 +263,7 @@ export interface ExtraJson {
 }
 
 export type CustomTextType = {
-  value?: string | boolean | number;
+  value?: string | boolean | number | object;
   type?: string | null;
   name?: string;
   checked?: boolean;
