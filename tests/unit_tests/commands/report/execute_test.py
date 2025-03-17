@@ -15,9 +15,10 @@
 # specific language governing permissions and limitations
 # under the License.
 
+from __future__ import annotations
+
 import json
 from datetime import datetime
-from typing import Optional
 from unittest.mock import patch
 from uuid import UUID
 
@@ -377,8 +378,8 @@ def test_get_tab_url(
 
 def create_report_schedule(
     mocker: MockerFixture,
-    custom_width: Optional[int] = None,
-    custom_height: Optional[int] = None,
+    custom_width: int | None = None,
+    custom_height: int | None = None,
 ) -> ReportSchedule:
     """Helper function to create a ReportSchedule instance with specified dimensions."""
     schedule = ReportSchedule()
@@ -411,7 +412,7 @@ def test_screenshot_width_calculation(
     app: SupersetApp,
     mocker: MockerFixture,
     test_id: str,
-    custom_width: Optional[int],
+    custom_width: int | None,
     max_width: int,
     window_width: int,
     expected_width: int,

@@ -15,6 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 
+from __future__ import annotations
+
 from datetime import datetime, timedelta
 from functools import partial
 from typing import cast

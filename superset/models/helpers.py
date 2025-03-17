@@ -69,11 +69,7 @@ from superset.exceptions import (
 from superset.extensions import feature_flag_manager
 from superset.jinja_context import BaseTemplateProcessor
 from superset.sql.parse import SQLScript
-from superset.sql_parse import (
-    has_table_query,
-    insert_rls_in_predicate,
-    sanitize_clause,
-)
+from superset.sql_parse import has_table_query, insert_rls_in_predicate, sanitize_clause
 from superset.superset_typing import (
     AdhocMetric,
     Column as ColumnTyping,
@@ -715,6 +711,8 @@ class ExploreMixin:  # pylint: disable=too-many-public-methods
         "MAX": sa.func.MAX,
     }
     fetch_values_predicate = None
+
+    normalize_columns = False
 
     @property
     def type(self) -> str:
@@ -1970,7 +1968,7 @@ class ExploreMixin:  # pylint: disable=too-many-public-methods
 
         self.make_orderby_compatible(select_exprs, orderby_exprs)
 
-        for col, (orig_col, ascending) in zip(orderby_exprs, orderby):  # noqa: B007
+        for col, (_orig_col, ascending) in zip(orderby_exprs, orderby):  # noqa: B007
             if not db_engine_spec.allows_alias_in_orderby and isinstance(col, Label):
                 # if engine does not allow using SELECT alias in ORDER BY
                 # revert to the underlying column
