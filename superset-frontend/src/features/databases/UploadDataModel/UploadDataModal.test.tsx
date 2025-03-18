@@ -16,15 +16,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+import { waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { UploadFile } from 'antd/lib/upload/interface';
 import fetchMock from 'fetch-mock';
+import { forEach } from 'lodash';
+import { render, screen } from 'spec/helpers/testing-library';
 import UploadDataModal, {
   validateUploadFileExtension,
 } from 'src/features/databases/UploadDataModel';
-import { render, screen } from 'spec/helpers/testing-library';
-import userEvent from '@testing-library/user-event';
-import { waitFor } from '@testing-library/react';
-import { UploadFile } from 'antd/lib/upload/interface';
-import { forEach } from 'lodash';
 
 fetchMock.post('glob:*api/v1/database/1/csv_upload/', {});
 fetchMock.post('glob:*api/v1/database/1/excel_upload/', {});
@@ -50,11 +50,11 @@ fetchMock.get('glob:*api/v1/database/*/catalogs/', {
   result: [],
 });
 
-fetchMock.get('glob:*api/v1/database/1/schemas/', {
+fetchMock.get('glob:*api/v1/database/1/schemas/?q=(upload_allowed:!t)', {
   result: ['information_schema', 'public'],
 });
 
-fetchMock.get('glob:*api/v1/database/2/schemas/', {
+fetchMock.get('glob:*api/v1/database/2/schemas/?q=(upload_allowed:!t)', {
   result: ['schema1', 'schema2'],
 });
 
