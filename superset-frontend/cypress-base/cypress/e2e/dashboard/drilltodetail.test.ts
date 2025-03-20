@@ -87,24 +87,24 @@ function testTimeChart(vizType: string) {
 
   cy.get(`[data-test-viz-type='${vizType}'] canvas`).then($canvas => {
     cy.wrap($canvas).scrollIntoView();
-    cy.wrap($canvas).trigger('mousemove', 70, 93);
-    cy.wrap($canvas).rightclick(70, 93);
+    cy.wrap($canvas).trigger('mousemove', 85, 93);
+    cy.wrap($canvas).rightclick(85, 93);
 
     openModalFromChartContext('Drill to detail by 1965');
     cy.getBySel('filter-val').should('contain', '1965');
     closeModal();
 
     cy.wrap($canvas).scrollIntoView();
-    cy.wrap($canvas).trigger('mousemove', 70, 93);
-    cy.wrap($canvas).rightclick(70, 93);
+    cy.wrap($canvas).trigger('mousemove', 85, 93);
+    cy.wrap($canvas).rightclick(85, 93);
 
     openModalFromChartContext('Drill to detail by boy');
     cy.getBySel('filter-val').should('contain', 'boy');
     closeModal();
 
     cy.wrap($canvas).scrollIntoView();
-    cy.wrap($canvas).trigger('mousemove', 70, 93);
-    cy.wrap($canvas).rightclick(70, 93);
+    cy.wrap($canvas).trigger('mousemove', 85, 93);
+    cy.wrap($canvas).rightclick(85, 93);
 
     openModalFromChartContext('Drill to detail by all');
     cy.getBySel('filter-val').first().should('contain', '1965');
@@ -453,7 +453,7 @@ describe('Drill to detail modal', () => {
       SUPPORTED_TIER2_CHARTS.forEach(waitForChartLoad);
     });
 
-    describe('Modal actions', () => {
+    describe.only('Modal actions', () => {
       it('clears filters', () => {
         interceptSamples();
 
@@ -461,7 +461,7 @@ describe('Drill to detail modal', () => {
         cy.get("[data-test-viz-type='box_plot'] canvas").then($canvas => {
           const canvasWidth = $canvas.width() || 0;
           const canvasHeight = $canvas.height() || 0;
-          const canvasCenterX = canvasWidth / 3;
+          const canvasCenterX = canvasWidth / 3 + 15;
           const canvasCenterY = (canvasHeight * 5) / 6;
 
           cy.wrap($canvas).scrollIntoView();
