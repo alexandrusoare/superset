@@ -54,6 +54,7 @@ import {
   DateLabel,
 } from './components';
 import { CurrentCalendarFrame } from './components/CurrentCalendarFrame';
+import TimeRangePickerControl from './components/TimeRangePickerControl';
 
 const StyledRangeType = styled(Select)`
   width: 272px;
@@ -423,7 +424,8 @@ export default function DateFilterLabel(props: DateFilterControlProps) {
   return (
     <>
       <ControlHeader {...props} />
-      {overlayStyle === 'Modal' ? modalContent : popoverContent}
+      {/* {overlayStyle === 'Modal' ? modalContent : popoverContent} */}
+      <TimeRangePickerControl />
     </>
   );
 }
