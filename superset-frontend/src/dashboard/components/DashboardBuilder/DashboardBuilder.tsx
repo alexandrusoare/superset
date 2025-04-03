@@ -17,71 +17,71 @@
  * under the License.
  */
 /* eslint-env browser */
-import cx from 'classnames';
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Global } from '@emotion/react';
 import {
   addAlpha,
   css,
-  isFeatureEnabled,
   FeatureFlag,
+  isFeatureEnabled,
   JsonObject,
   styled,
   t,
-  useTheme,
   useElementOnScreen,
+  useTheme,
 } from '@superset-ui/core';
-import { Global } from '@emotion/react';
+import cx from 'classnames';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { EmptyStateBig } from 'src/components/EmptyState';
 import ErrorBoundary from 'src/components/ErrorBoundary';
+import BasicErrorAlert from 'src/components/ErrorMessage/BasicErrorAlert';
+import Icons from 'src/components/Icons';
+import Loading from 'src/components/Loading';
+import ResizableSidebar from 'src/components/ResizableSidebar';
+import { useUiConfig } from 'src/components/UiConfigContext';
+import { URL_PARAMS } from 'src/constants';
+import {
+  clearDashboardHistory,
+  deleteTopLevelTabs,
+  handleComponentDrop,
+} from 'src/dashboard/actions/dashboardLayout';
+import {
+  setDirectPathToChild,
+  setEditMode,
+} from 'src/dashboard/actions/dashboardState';
 import BuilderComponentPane from 'src/dashboard/components/BuilderComponentPane';
 import DashboardHeader from 'src/dashboard/components/Header';
-import Icons from 'src/components/Icons';
 import IconButton from 'src/dashboard/components/IconButton';
 import { Droppable } from 'src/dashboard/components/dnd/DragDroppable';
-import DashboardComponent from 'src/dashboard/containers/DashboardComponent';
 import WithPopoverMenu from 'src/dashboard/components/menu/WithPopoverMenu';
-import getDirectPathToTabIndex from 'src/dashboard/util/getDirectPathToTabIndex';
-import { URL_PARAMS } from 'src/constants';
-import { getUrlParam } from 'src/utils/urlUtils';
+import FilterBar from 'src/dashboard/components/nativeFilters/FilterBar';
+import {
+  BUILDER_SIDEPANEL_WIDTH,
+  CLOSED_FILTER_BAR_WIDTH,
+  EMPTY_CONTAINER_Z_INDEX,
+  FILTER_BAR_HEADER_HEIGHT,
+  MAIN_HEADER_HEIGHT,
+  OPEN_FILTER_BAR_MAX_WIDTH,
+  OPEN_FILTER_BAR_WIDTH,
+} from 'src/dashboard/constants';
+import DashboardComponent from 'src/dashboard/containers/DashboardComponent';
 import {
   DashboardLayout,
   FilterBarOrientation,
   RootState,
 } from 'src/dashboard/types';
 import {
-  setDirectPathToChild,
-  setEditMode,
-} from 'src/dashboard/actions/dashboardState';
-import {
-  deleteTopLevelTabs,
-  handleComponentDrop,
-  clearDashboardHistory,
-} from 'src/dashboard/actions/dashboardLayout';
-import {
   DASHBOARD_GRID_ID,
   DASHBOARD_ROOT_DEPTH,
   DASHBOARD_ROOT_ID,
   DashboardStandaloneMode,
 } from 'src/dashboard/util/constants';
-import FilterBar from 'src/dashboard/components/nativeFilters/FilterBar';
-import Loading from 'src/components/Loading';
-import { EmptyStateBig } from 'src/components/EmptyState';
-import { useUiConfig } from 'src/components/UiConfigContext';
-import ResizableSidebar from 'src/components/ResizableSidebar';
-import {
-  BUILDER_SIDEPANEL_WIDTH,
-  CLOSED_FILTER_BAR_WIDTH,
-  FILTER_BAR_HEADER_HEIGHT,
-  MAIN_HEADER_HEIGHT,
-  OPEN_FILTER_BAR_MAX_WIDTH,
-  OPEN_FILTER_BAR_WIDTH,
-  EMPTY_CONTAINER_Z_INDEX,
-} from 'src/dashboard/constants';
-import BasicErrorAlert from 'src/components/ErrorMessage/BasicErrorAlert';
-import { getRootLevelTabsComponent, shouldFocusTabs } from './utils';
+import getDirectPathToTabIndex from 'src/dashboard/util/getDirectPathToTabIndex';
+import { getUrlParam } from 'src/utils/urlUtils';
 import DashboardContainer from './DashboardContainer';
-import { useNativeFilters } from './state';
 import DashboardWrapper from './DashboardWrapper';
+import { useNativeFilters } from './state';
+import { getRootLevelTabsComponent, shouldFocusTabs } from './utils';
 
 // @z-index-above-dashboard-charts + 1 = 11
 const FiltersPanel = styled.div<{ width: number; hidden: boolean }>`
