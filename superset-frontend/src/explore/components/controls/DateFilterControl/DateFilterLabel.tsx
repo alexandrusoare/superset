@@ -425,7 +425,10 @@ export default function DateFilterLabel(props: DateFilterControlProps) {
     <>
       <ControlHeader {...props} />
       {/* {overlayStyle === 'Modal' ? modalContent : popoverContent} */}
-      <TimeRangePickerControl />
+      <TimeRangePickerControl
+        value={props.value}
+        onChange={setTimeRangeValue}
+      />
     </>
   );
 }
