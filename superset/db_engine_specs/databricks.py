@@ -350,7 +350,7 @@ class DatabricksDynamicBaseEngineSpec(BasicParametersMixin, DatabricksBaseEngine
 
 class DatabricksNativeEngineSpec(DatabricksDynamicBaseEngineSpec):
     engine = "databricks"
-    engine_name = "Databricks"
+    engine_name = "Databricks (legacy)"
     drivers = {"connector": "Native all-purpose driver"}
     default_driver = "connector"
 
@@ -482,7 +482,7 @@ class DatabricksNativeEngineSpec(DatabricksDynamicBaseEngineSpec):
 
 class DatabricksPythonConnectorEngineSpec(DatabricksDynamicBaseEngineSpec):
     engine = "databricks"
-    engine_name = "Databricks Python Connector"
+    engine_name = "Databricks"
     default_driver = "databricks-sql-python"
     drivers = {"databricks-sql-python": "Databricks SQL Python"}
 
