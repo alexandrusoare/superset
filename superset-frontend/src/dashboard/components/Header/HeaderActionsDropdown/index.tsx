@@ -16,26 +16,26 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { PureComponent } from 'react';
-import { isEmpty } from 'lodash';
-import { connect } from 'react-redux';
 import { t } from '@superset-ui/core';
+import { isEmpty } from 'lodash';
+import { PureComponent } from 'react';
+import { connect } from 'react-redux';
 import { Menu } from 'src/components/Menu';
 import { URL_PARAMS } from 'src/constants';
-import ShareMenuItems from 'src/dashboard/components/menu/ShareMenuItems';
-import DownloadMenuItems from 'src/dashboard/components/menu/DownloadMenuItems';
 import CssEditor from 'src/dashboard/components/CssEditor';
+import FilterScopeModal from 'src/dashboard/components/filterscope/FilterScopeModal';
+import { HeaderDropdownProps } from 'src/dashboard/components/Header/types';
+import DownloadMenuItems from 'src/dashboard/components/menu/DownloadMenuItems';
+import ShareMenuItems from 'src/dashboard/components/menu/ShareMenuItems';
 import RefreshIntervalModal from 'src/dashboard/components/RefreshIntervalModal';
 import SaveModal from 'src/dashboard/components/SaveModal';
-import HeaderReportDropdown from 'src/features/reports/ReportModal/HeaderReportDropdown';
-import injectCustomCss from 'src/dashboard/util/injectCustomCss';
-import { SAVE_TYPE_NEWDASHBOARD } from 'src/dashboard/util/constants';
-import FilterScopeModal from 'src/dashboard/components/filterscope/FilterScopeModal';
-import getDashboardUrl from 'src/dashboard/util/getDashboardUrl';
-import { getActiveFilters } from 'src/dashboard/util/activeDashboardFilters';
-import { getUrlParam } from 'src/utils/urlUtils';
 import { MenuKeys, RootState } from 'src/dashboard/types';
-import { HeaderDropdownProps } from 'src/dashboard/components/Header/types';
+import { getActiveFilters } from 'src/dashboard/util/activeDashboardFilters';
+import { SAVE_TYPE_NEWDASHBOARD } from 'src/dashboard/util/constants';
+import getDashboardUrl from 'src/dashboard/util/getDashboardUrl';
+import injectCustomCss from 'src/dashboard/util/injectCustomCss';
+import HeaderReportDropdown from 'src/features/reports/ReportModal/HeaderReportDropdown';
+import { getUrlParam } from 'src/utils/urlUtils';
 
 const mapStateToProps = (state: RootState) => ({
   directPathToChild: state.dashboardState.directPathToChild,
@@ -97,11 +97,13 @@ export class HeaderActionsDropdown extends PureComponent<
         this.props.showPropertiesModal();
         break;
       case MenuKeys.ToggleFullscreen: {
+        const isCurrentlyStandalone =
+          Number(getUrlParam(URL_PARAMS.standalone)) === 1;
         const url = getDashboardUrl({
           pathname: window.location.pathname,
           filters: getActiveFilters(),
           hash: window.location.hash,
-          standalone: getUrlParam(URL_PARAMS.standalone),
+          standalone: isCurrentlyStandalone ? null : 1,
         });
         window.location.replace(url);
         break;
