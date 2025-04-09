@@ -16,38 +16,39 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { useEffect, useMemo, useState } from 'react';
 import { t } from '@superset-ui/core';
 import { filter } from 'lodash';
-import {
-  useChartEditModal,
-  useFavoriteStatus,
-  useListViewResource,
-} from 'src/views/CRUD/hooks';
+import { useEffect, useMemo, useState } from 'react';
+import { useHistory } from 'react-router-dom';
+import ErrorBoundary from 'src/components/ErrorBoundary';
+import Loading from 'src/components/Loading';
+import withToasts from 'src/components/MessageToasts/withToasts';
+import PropertiesModal from 'src/explore/components/PropertiesModal';
+import ChartCard from 'src/features/charts/ChartCard';
+import { LoadingCards } from 'src/pages/Home';
+import { User } from 'src/types/bootstrapTypes';
+import Chart from 'src/types/Chart';
+import handleResourceExport from 'src/utils/export';
 import {
   getItem,
   LocalStorageKeys,
   setItem,
 } from 'src/utils/localStorageHelpers';
-import withToasts from 'src/components/MessageToasts/withToasts';
-import { useHistory } from 'react-router-dom';
+import { navigateTo } from 'src/utils/navigationUtils';
+import {
+  useChartEditModal,
+  useFavoriteStatus,
+  useListViewResource,
+} from 'src/views/CRUD/hooks';
 import { Filter, TableTab } from 'src/views/CRUD/types';
-import PropertiesModal from 'src/explore/components/PropertiesModal';
-import { User } from 'src/types/bootstrapTypes';
 import {
   CardContainer,
   getFilterValues,
   PAGE_SIZE,
 } from 'src/views/CRUD/utils';
-import { LoadingCards } from 'src/pages/Home';
-import ChartCard from 'src/features/charts/ChartCard';
-import Chart from 'src/types/Chart';
-import handleResourceExport from 'src/utils/export';
-import Loading from 'src/components/Loading';
-import ErrorBoundary from 'src/components/ErrorBoundary';
 import EmptyState from './EmptyState';
-import { WelcomeTable } from './types';
 import SubMenu from './SubMenu';
+import { WelcomeTable } from './types';
 
 interface ChartTableProps {
   addDangerToast: (message: string) => void;
@@ -193,7 +194,7 @@ function ChartTable({
             ),
             buttonStyle: 'tertiary',
             onClick: () => {
-              window.location.assign('/chart/add');
+              navigateTo('/chart/add', { assign: true });
             },
           },
           {

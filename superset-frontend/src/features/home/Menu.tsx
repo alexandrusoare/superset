@@ -16,24 +16,25 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { useState, useEffect } from 'react';
-import { styled, css, useTheme, SupersetTheme } from '@superset-ui/core';
-import { debounce } from 'lodash';
 import { Global } from '@emotion/react';
-import { getUrlParam } from 'src/utils/urlUtils';
-import { Row, Col, Grid } from 'src/components';
-import { MainNav as DropdownMenu, MenuMode } from 'src/components/Menu';
-import { Tooltip } from 'src/components/Tooltip';
+import { css, styled, SupersetTheme, useTheme } from '@superset-ui/core';
+import { debounce } from 'lodash';
+import { useEffect, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { Col, Grid, Row } from 'src/components';
 import { GenericLink } from 'src/components/GenericLink/GenericLink';
 import Icons from 'src/components/Icons';
+import { MainNav as DropdownMenu, MenuMode } from 'src/components/Menu';
+import { Tooltip } from 'src/components/Tooltip';
 import { useUiConfig } from 'src/components/UiConfigContext';
 import { URL_PARAMS } from 'src/constants';
 import {
+  MenuData,
   MenuObjectChildProps,
   MenuObjectProps,
-  MenuData,
 } from 'src/types/bootstrapTypes';
+import { assetUrl } from 'src/utils/assetUrl';
+import { getUrlParam } from 'src/utils/urlUtils';
 import RightMenu from './RightMenu';
 
 interface MenuProps {
@@ -313,11 +314,11 @@ export function Menu({
           >
             {isFrontendRoute(window.location.pathname) ? (
               <GenericLink className="navbar-brand" to={brand.path}>
-                <img src={brand.icon} alt={brand.alt} />
+                <img src={assetUrl(brand.icon)} alt={brand.alt} />
               </GenericLink>
             ) : (
               <a className="navbar-brand" href={brand.path} tabIndex={-1}>
-                <img src={brand.icon} alt={brand.alt} />
+                <img src={assetUrl(brand.icon)} alt={brand.alt} />
               </a>
             )}
           </Tooltip>

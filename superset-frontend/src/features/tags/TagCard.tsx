@@ -16,16 +16,17 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+import { FeatureFlag, isFeatureEnabled, t, useTheme } from '@superset-ui/core';
 import { Link } from 'react-router-dom';
-import { isFeatureEnabled, FeatureFlag, t, useTheme } from '@superset-ui/core';
-import { CardStyles } from 'src/views/CRUD/utils';
 import { AntdDropdown } from 'src/components';
-import { Menu } from 'src/components/Menu';
 import ConfirmStatusChange from 'src/components/ConfirmStatusChange';
-import ListViewCard from 'src/components/ListViewCard';
 import Icons from 'src/components/Icons';
-import { Tag } from 'src/views/CRUD/types';
+import ListViewCard from 'src/components/ListViewCard';
+import { Menu } from 'src/components/Menu';
 import { deleteTags } from 'src/features/tags/tags';
+import { assetUrl } from 'src/utils/assetUrl';
+import { Tag } from 'src/views/CRUD/types';
+import { CardStyles } from 'src/views/CRUD/utils';
 
 interface TagCardProps {
   tag: Tag;
@@ -99,7 +100,9 @@ function TagCard({
         }
         url={undefined}
         linkComponent={Link}
-        imgFallbackURL="/static/assets/images/dashboard-card-fallback.svg"
+        imgFallbackURL={assetUrl(
+          '/static/assets/images/dashboard-card-fallback.svg',
+        )}
         description={t('Modified %s', tag.changed_on_delta_humanized)}
         actions={
           <ListViewCard.Actions

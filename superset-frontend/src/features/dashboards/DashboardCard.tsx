@@ -16,24 +16,25 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { useEffect, useState } from 'react';
-import { Link, useHistory } from 'react-router-dom';
 import {
-  isFeatureEnabled,
   FeatureFlag,
+  isFeatureEnabled,
+  SupersetClient,
   t,
   useTheme,
-  SupersetClient,
 } from '@superset-ui/core';
-import { CardStyles } from 'src/views/CRUD/utils';
+import { useEffect, useState } from 'react';
+import { Link, useHistory } from 'react-router-dom';
 import { AntdDropdown } from 'src/components';
-import { Menu } from 'src/components/Menu';
-import ListViewCard from 'src/components/ListViewCard';
-import Icons from 'src/components/Icons';
-import Label from 'src/components/Label';
 import FacePile from 'src/components/FacePile';
 import FaveStar from 'src/components/FaveStar';
+import Icons from 'src/components/Icons';
+import Label from 'src/components/Label';
+import ListViewCard from 'src/components/ListViewCard';
+import { Menu } from 'src/components/Menu';
+import { assetUrl } from 'src/utils/assetUrl';
 import { Dashboard } from 'src/views/CRUD/types';
+import { CardStyles } from 'src/views/CRUD/utils';
 
 interface DashboardCardProps {
   isChart?: boolean;
@@ -164,7 +165,9 @@ function DashboardCard({
         url={bulkSelectEnabled ? undefined : dashboard.url}
         linkComponent={Link}
         imgURL={dashboard.thumbnail_url}
-        imgFallbackURL="/static/assets/images/dashboard-card-fallback.svg"
+        imgFallbackURL={assetUrl(
+          '/static/assets/images/dashboard-card-fallback.svg',
+        )}
         description={t('Modified %s', dashboard.changed_on_delta_humanized)}
         coverLeft={<FacePile users={dashboard.owners || []} />}
         actions={

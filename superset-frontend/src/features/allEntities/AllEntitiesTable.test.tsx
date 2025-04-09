@@ -99,6 +99,7 @@ describe('AllEntitiesTable', () => {
         setShowTagModal={mockSetShowTagModal}
         objects={mockObjects}
       />,
+      { useRouter: true },
     );
 
     expect(
@@ -115,6 +116,7 @@ describe('AllEntitiesTable', () => {
         setShowTagModal={mockSetShowTagModal}
         objects={mockObjectsWithTags}
       />,
+      { useRouter: true },
     );
 
     expect(screen.getByText('Sales Dashboard')).toBeInTheDocument();

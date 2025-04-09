@@ -16,31 +16,32 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { useEffect, useMemo, useState } from 'react';
 import { SupersetClient, t } from '@superset-ui/core';
 import { filter } from 'lodash';
-import { useFavoriteStatus, useListViewResource } from 'src/views/CRUD/hooks';
-import { Dashboard, DashboardTableProps, TableTab } from 'src/views/CRUD/types';
-import handleResourceExport from 'src/utils/export';
+import { useEffect, useMemo, useState } from 'react';
 import { useHistory } from 'react-router-dom';
+import DeleteModal from 'src/components/DeleteModal';
+import Loading from 'src/components/Loading';
+import withToasts from 'src/components/MessageToasts/withToasts';
+import PropertiesModal from 'src/dashboard/components/PropertiesModal';
+import DashboardCard from 'src/features/dashboards/DashboardCard';
+import { LoadingCards } from 'src/pages/Home';
+import handleResourceExport from 'src/utils/export';
 import {
   getItem,
   LocalStorageKeys,
   setItem,
 } from 'src/utils/localStorageHelpers';
-import { LoadingCards } from 'src/pages/Home';
+import { navigateTo } from 'src/utils/navigationUtils';
+import { useFavoriteStatus, useListViewResource } from 'src/views/CRUD/hooks';
+import { Dashboard, DashboardTableProps, TableTab } from 'src/views/CRUD/types';
 import {
   CardContainer,
   createErrorHandler,
   getFilterValues,
-  PAGE_SIZE,
   handleDashboardDelete,
+  PAGE_SIZE,
 } from 'src/views/CRUD/utils';
-import withToasts from 'src/components/MessageToasts/withToasts';
-import Loading from 'src/components/Loading';
-import DeleteModal from 'src/components/DeleteModal';
-import PropertiesModal from 'src/dashboard/components/PropertiesModal';
-import DashboardCard from 'src/features/dashboards/DashboardCard';
 import EmptyState from './EmptyState';
 import SubMenu from './SubMenu';
 import { WelcomeTable } from './types';
@@ -196,7 +197,7 @@ function DashboardTable({
             ),
             buttonStyle: 'tertiary',
             onClick: () => {
-              window.location.assign('/dashboard/new');
+              navigateTo('/dashboard/new', { assign: true });
             },
           },
           {

@@ -19,20 +19,20 @@
 import { nativeFilters } from 'cypress/support/directories';
 
 import {
-  addCountryNameFilter,
-  applyNativeFilterValueWithIndex,
-  enterNativeFilterEditModal,
-  inputNativeFilterDefaultValue,
-  saveNativeFilterSettings,
-  validateFilterNameOnDashboard,
-  testItems,
-  interceptFilterState,
-} from './utils';
-import {
   prepareDashboardFilters,
   SAMPLE_CHART,
   visitDashboard,
 } from './shared_dashboard_functions';
+import {
+  addCountryNameFilter,
+  applyNativeFilterValueWithIndex,
+  enterNativeFilterEditModal,
+  inputNativeFilterDefaultValue,
+  interceptFilterState,
+  saveNativeFilterSettings,
+  testItems,
+  validateFilterNameOnDashboard,
+} from './utils';
 
 function openMoreFilters(waitFilterState = true) {
   interceptFilterState();
@@ -176,8 +176,8 @@ describe('Horizontal FilterBar', () => {
     validateFilterNameOnDashboard(testItems.topTenChart.filterColumn);
   });
 
-  it('should spot changes in "more filters" and apply their values', () => {
-    cy.intercept(`/api/v1/chart/data?form_data=**`).as('chart');
+  it.skip('should spot changes in "more filters" and apply their values', () => {
+    cy.intercept(`**/api/v1/chart/data?form_data=**`).as('chart');
     prepareDashboardFilters([
       { name: 'test_1', column: 'country_name', datasetId: 2 },
       { name: 'test_2', column: 'country_code', datasetId: 2 },

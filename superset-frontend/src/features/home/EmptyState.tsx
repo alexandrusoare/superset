@@ -16,11 +16,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { Link } from 'react-router-dom';
-import Button from 'src/components/Button';
-import { Empty } from 'src/components';
-import { TableTab } from 'src/views/CRUD/types';
 import { styled, t } from '@superset-ui/core';
+import { Link } from 'react-router-dom';
+import { Empty } from 'src/components';
+import Button from 'src/components/Button';
+import { TableTab } from 'src/views/CRUD/types';
 import { WelcomeTable } from './types';
 
 const welcomeTableLabels: Record<WelcomeTable, string> = {

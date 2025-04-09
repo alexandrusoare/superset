@@ -37,6 +37,7 @@ import { MainNav as Menu } from 'src/components/Menu';
 import { Tooltip } from 'src/components/Tooltip';
 import Icons from 'src/components/Icons';
 import Label from 'src/components/Label';
+import { ensureAppRoot } from 'src/utils/pathUtils';
 import { findPermission } from 'src/utils/findPermission';
 import { isUserAdmin } from 'src/dashboard/util/permissionUtils';
 import {
@@ -320,7 +321,11 @@ const RightMenu = ({
       </Menu.Item>
     ) : (
       <Menu.Item key={item.name} css={styledChildMenu}>
-        {item.url ? <a href={item.url}> {item.label} </a> : item.label}
+        {item.url ? (
+          <a href={ensureAppRoot(item.url)}> {item.label} </a>
+        ) : (
+          item.label
+        )}
       </Menu.Item>
     );
 
@@ -460,7 +465,7 @@ const RightMenu = ({
                         {menu.label}
                       </Link>
                     ) : (
-                      <a href={menu.url}>
+                      <a href={ensureAppRoot(menu.url || '')}>
                         <i
                           data-test={`menu-item-${menu.label}`}
                           className={`fa ${menu.icon}`}
@@ -495,7 +500,7 @@ const RightMenu = ({
                       {isFrontendRoute(child.url) ? (
                         <Link to={child.url || ''}>{menuItemDisplay}</Link>
                       ) : (
-                        <a href={child.url}>{menuItemDisplay}</a>
+                        <a href={child.url || ''}>{menuItemDisplay}</a>
                       )}
                     </Menu.Item>
                   );

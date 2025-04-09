@@ -17,22 +17,22 @@
  * under the License.
  */
 /* eslint-env browser */
+import { InfoTooltipWithTrigger } from '@superset-ui/chart-controls';
+import { css, styled, t } from '@superset-ui/core';
+import { debounce, pickBy } from 'lodash';
 import { Component } from 'react';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import { FixedSizeList as List } from 'react-window';
 // @ts-ignore
 import { createFilter } from 'react-search-input';
-import { t, styled, css } from '@superset-ui/core';
-import { Input } from 'src/components/Input';
+import { Dispatch } from 'redux';
 import { Select } from 'src/components';
-import Loading from 'src/components/Loading';
 import Button from 'src/components/Button';
+import Checkbox from 'src/components/Checkbox';
 import Icons from 'src/components/Icons';
-import {
-  LocalStorageKeys,
-  getItem,
-  setItem,
-} from 'src/utils/localStorageHelpers';
+import { Input } from 'src/components/Input';
+import Loading from 'src/components/Loading';
+import { Slice } from 'src/dashboard/types';
 import {
   CHART_TYPE,
   NEW_COMPONENT_SOURCE_TYPE,
@@ -41,11 +41,12 @@ import {
   NEW_CHART_ID,
   NEW_COMPONENTS_SOURCE_ID,
 } from 'src/dashboard/util/constants';
-import { debounce, pickBy } from 'lodash';
-import Checkbox from 'src/components/Checkbox';
-import { InfoTooltipWithTrigger } from '@superset-ui/chart-controls';
-import { Dispatch } from 'redux';
-import { Slice } from 'src/dashboard/types';
+import {
+  LocalStorageKeys,
+  getItem,
+  setItem,
+} from 'src/utils/localStorageHelpers';
+import { navigateTo } from 'src/utils/navigationUtils';
 import AddSliceCard from './AddSliceCard';
 import AddSliceDragPreview from './dnd/AddSliceDragPreview';
 import DragDroppable from './dnd/DragDroppable';
@@ -359,11 +360,9 @@ class SliceAdder extends Component<SliceAdderProps, SliceAdderState> {
             buttonStyle="link"
             buttonSize="xsmall"
             onClick={() =>
-              window.open(
-                `/chart/add?dashboard_id=${this.props.dashboardId}`,
-                '_blank',
-                'noopener noreferrer',
-              )
+              navigateTo(`/chart/add?dashboard_id=${this.props.dashboardId}`, {
+                newWindow: true,
+              })
             }
           >
             <Icons.PlusSmall />

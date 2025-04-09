@@ -17,12 +17,13 @@
  * under the License.
  */
 
+import { CloseOutlined } from '@ant-design/icons';
 import { styled } from '@superset-ui/core';
-import TagType from 'src/types/TagType';
 import { Tag as AntdTag } from 'antd-v5';
 import { useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { Tooltip } from 'src/components/Tooltip';
-import { CloseOutlined } from '@ant-design/icons';
+import TagType from 'src/types/TagType';
 
 const StyledTag = styled(AntdTag)`
   ${({ theme }) => `
@@ -69,13 +70,13 @@ const Tag = ({
         <Tooltip title={toolTipTitle} key={toolTipTitle}>
           <StyledTag data-test="tag" key={id} onClick={onClick} role={whatRole}>
             {id ? (
-              <a
-                href={`/superset/all_entities/?id=${id}`}
+              <Link
+                to={`/superset/all_entities/?id=${id}`}
                 target="_blank"
                 rel="noreferrer"
               >
                 {tagDisplay}
-              </a>
+              </Link>
             ) : (
               tagDisplay
             )}

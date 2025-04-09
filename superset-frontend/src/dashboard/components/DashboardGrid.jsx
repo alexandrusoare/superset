@@ -16,16 +16,17 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { PureComponent, Fragment } from 'react';
-import PropTypes from 'prop-types';
-import classNames from 'classnames';
 import { addAlpha, css, styled, t } from '@superset-ui/core';
+import classNames from 'classnames';
+import PropTypes from 'prop-types';
+import { Fragment, PureComponent } from 'react';
 import { EmptyStateBig } from 'src/components/EmptyState';
-import { componentShape } from '../util/propShapes';
+import { navigateTo } from 'src/utils/navigationUtils';
 import DashboardComponent from '../containers/DashboardComponent';
-import { Droppable } from './dnd/DragDroppable';
-import { GRID_GUTTER_SIZE, GRID_COLUMN_COUNT } from '../util/constants';
 import { TAB_TYPE } from '../util/componentTypes';
+import { GRID_COLUMN_COUNT, GRID_GUTTER_SIZE } from '../util/constants';
+import { componentShape } from '../util/propShapes';
+import { Droppable } from './dnd/DragDroppable';
 
 const propTypes = {
   depth: PropTypes.number.isRequired,
@@ -214,11 +215,9 @@ class DashboardGrid extends PureComponent {
           </>
         }
         buttonAction={() => {
-          window.open(
-            `/chart/add?dashboard_id=${dashboardId}`,
-            '_blank',
-            'noopener noreferrer',
-          );
+          navigateTo(`/chart/add?dashboard_id=${dashboardId}`, {
+            newWindow: true,
+          });
         }}
         image="chart.svg"
       />
@@ -237,11 +236,9 @@ class DashboardGrid extends PureComponent {
           </>
         }
         buttonAction={() => {
-          window.open(
-            `/chart/add?dashboard_id=${dashboardId}`,
-            '_blank',
-            'noopener noreferrer',
-          );
+          navigateTo(`/chart/add?dashboard_id=${dashboardId}`, {
+            newWindow: true,
+          });
         }}
         image="chart.svg"
       />

@@ -17,26 +17,27 @@
  * under the License.
  */
 
+import { SupersetClient, t } from '@superset-ui/core';
 import { useMemo, useState } from 'react';
-import rison from 'rison';
-import { t, SupersetClient } from '@superset-ui/core';
 import { Link, useHistory } from 'react-router-dom';
-import { useListViewResource } from 'src/views/CRUD/hooks';
-import { createFetchRelated, createErrorHandler } from 'src/views/CRUD/utils';
-import withToasts from 'src/components/MessageToasts/withToasts';
-import SubMenu, { SubMenuProps } from 'src/features/home/SubMenu';
-import ActionsBar, { ActionProps } from 'src/components/ListView/ActionsBar';
-import ListView, {
-  ListViewProps,
-  Filters,
-  FilterOperator,
-} from 'src/components/ListView';
-import DeleteModal from 'src/components/DeleteModal';
+import rison from 'rison';
+import { ModifiedInfo } from 'src/components/AuditInfo';
 import ConfirmStatusChange from 'src/components/ConfirmStatusChange';
+import DeleteModal from 'src/components/DeleteModal';
+import ListView, {
+  FilterOperator,
+  Filters,
+  ListViewProps,
+} from 'src/components/ListView';
+import ActionsBar, { ActionProps } from 'src/components/ListView/ActionsBar';
+import withToasts from 'src/components/MessageToasts/withToasts';
 import AnnotationLayerModal from 'src/features/annotationLayers/AnnotationLayerModal';
 import { AnnotationLayerObject } from 'src/features/annotationLayers/types';
-import { ModifiedInfo } from 'src/components/AuditInfo';
+import SubMenu, { SubMenuProps } from 'src/features/home/SubMenu';
+import { navigateTo } from 'src/utils/navigationUtils';
+import { useListViewResource } from 'src/views/CRUD/hooks';
 import { QueryObjectColumns } from 'src/views/CRUD/types';
+import { createErrorHandler, createFetchRelated } from 'src/views/CRUD/utils';
 
 const PAGE_SIZE = 25;
 
@@ -277,7 +278,7 @@ function AnnotationLayersList({
   };
 
   const onLayerAdd = (id?: number) => {
-    window.location.href = `/annotationlayer/${id}/annotation`;
+    navigateTo(`/annotationlayer/${id}/annotation`);
   };
 
   const onModalHide = () => {
