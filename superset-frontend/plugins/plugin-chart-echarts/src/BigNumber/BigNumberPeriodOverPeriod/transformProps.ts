@@ -86,6 +86,8 @@ export default function transformProps(chartProps: ChartProps) {
     comparisonColorScheme,
     comparisonColorEnabled,
     percentDifferenceFormat,
+    subtitle = '',
+    subtitleFontSize,
     columnConfig,
   } = formData;
   const { data: dataA = [] } = queriesData[0];
@@ -179,6 +181,8 @@ export default function transformProps(chartProps: ChartProps) {
     valueDifference,
     percentDifferenceFormattedString: percentDifference,
     boldText,
+    subtitle,
+    subtitleFontSize,
     headerFontSize: getHeaderFontSize(headerFontSize),
     subheaderFontSize: getComparisonFontSize(subheaderFontSize),
     headerText,

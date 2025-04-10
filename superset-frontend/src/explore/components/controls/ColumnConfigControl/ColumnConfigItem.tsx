@@ -16,10 +16,10 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { memo } from 'react';
-import { useTheme } from '@superset-ui/core';
-import Popover from 'src/components/Popover';
 import { ColumnTypeLabel } from '@superset-ui/chart-controls';
+import { useTheme } from '@superset-ui/core';
+import { memo } from 'react';
+import Popover from 'src/components/Popover';
 import ColumnConfigPopover, {
   ColumnConfigPopoverProps,
 } from './ColumnConfigPopover';
@@ -35,6 +35,7 @@ export default memo(function ColumnConfigItem({
 }: ColumnConfigItemProps) {
   const { colors, gridUnit } = useTheme();
   const caretWidth = gridUnit * 6;
+
   return (
     <Popover
       title={column.name}
