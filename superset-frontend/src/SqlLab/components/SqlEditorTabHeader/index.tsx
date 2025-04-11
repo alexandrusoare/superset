@@ -16,18 +16,18 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { useMemo, FC } from 'react';
+import { FC, useMemo } from 'react';
 
+import { QueryState, styled, t } from '@superset-ui/core';
+import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { bindActionCreators } from 'redux';
-import { useSelector, useDispatch, shallowEqual } from 'react-redux';
 import { Dropdown } from 'src/components/Dropdown';
 import { Menu } from 'src/components/Menu';
-import { styled, t, QueryState } from '@superset-ui/core';
 import {
-  removeQueryEditor,
-  removeAllOtherQueryEditors,
-  queryEditorSetTitle,
   cloneQueryToNewTab,
+  queryEditorSetTitle,
+  removeAllOtherQueryEditors,
+  removeQueryEditor,
   toggleLeftBar,
 } from 'src/SqlLab/actions/sqlLab';
 import { QueryEditor, SqlLabRootState } from 'src/SqlLab/types';

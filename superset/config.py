@@ -564,6 +564,9 @@ DEFAULT_FEATURE_FLAGS: dict[str, bool] = {
     # If on, you'll want to add "https://avatars.slack-edge.com" to the list of allowed
     # domains in your TALISMAN_CONFIG
     "SLACK_ENABLE_AVATARS": False,
+    # Allow metrics and columns to be grouped into (potentially nested) folders in the
+    # chart builder
+    "DATASET_FOLDERS": False,
 }
 
 # ------------------------------
