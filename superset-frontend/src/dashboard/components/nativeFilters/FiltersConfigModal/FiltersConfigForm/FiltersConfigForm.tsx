@@ -134,6 +134,7 @@ type ControlKey = keyof PluginFilterSelectCustomizeProps;
 const controlsOrder: ControlKey[] = [
   'enableEmptyFilter',
   'defaultToFirstItem',
+  'creatable',
   'multiSelect',
   'searchAllOptions',
   'inverseSelection',

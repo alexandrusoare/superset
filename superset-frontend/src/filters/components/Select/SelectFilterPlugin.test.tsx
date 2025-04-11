@@ -16,8 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import userEvent from '@testing-library/user-event';
 import { AppSection } from '@superset-ui/core';
+import userEvent from '@testing-library/user-event';
 import { render, screen } from 'spec/helpers/testing-library';
 import { NULL_STRING } from 'src/utils/common';
 import SelectFilterPlugin from './SelectFilterPlugin';
@@ -28,6 +28,7 @@ jest.useFakeTimers();
 const selectMultipleProps = {
   formData: {
     sortAscending: true,
+    creatable: false,
     multiSelect: true,
     enableEmptyFilter: true,
     defaultToFirstItem: false,
@@ -238,5 +239,17 @@ describe('SelectFilterPlugin', () => {
     userEvent.tab();
     // One call for the search term and other for the empty search
     expect(setDataMask).toHaveBeenCalledTimes(2);
+  });
+
+  test('Should not allow for new values when creatable is false', () => {
+    getWrapper({ creatable: false });
+    userEvent.type(screen.getByRole('combobox'), 'new value');
+    expect(screen.queryByTitle('new value')).not.toBeInTheDocument();
+  });
+
+  test('Should allow for new values when creatable is false', async () => {
+    getWrapper({ creatable: true });
+    userEvent.type(screen.getByRole('combobox'), 'new value');
+    expect(await screen.findByTitle('new value')).toBeInTheDocument();
   });
 });
