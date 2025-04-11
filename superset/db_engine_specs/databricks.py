@@ -370,7 +370,10 @@ class DatabricksNativeEngineSpec(DatabricksDynamicBaseEngineSpec):
         "extra",
     }
 
-    supports_dynamic_schema = supports_catalog = supports_dynamic_catalog = True
+    supports_dynamic_schema = True
+    supports_catalog = True
+    supports_dynamic_catalog = True
+    supports_cross_catalog_queries = True
 
     @classmethod
     def build_sqlalchemy_uri(  # type: ignore
@@ -430,10 +433,7 @@ class DatabricksNativeEngineSpec(DatabricksDynamicBaseEngineSpec):
         return spec.to_dict()["components"]["schemas"][cls.__name__]
 
     @classmethod
-    def get_default_catalog(
-        cls,
-        database: Database,
-    ) -> str | None:
+    def get_default_catalog(cls, database: Database) -> str:
         """
         Return the default catalog.
 
