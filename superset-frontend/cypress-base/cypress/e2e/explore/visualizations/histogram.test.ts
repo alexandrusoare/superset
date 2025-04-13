@@ -20,7 +20,7 @@ import { QueryFormData } from '@superset-ui/core';
 
 describe('Visualization > Histogram', () => {
   beforeEach(() => {
-    cy.intercept('POST', '/superset/explore_json/**').as('getJson');
+    cy.intercept('POST', '**/superset/explore_json/**').as('getJson');
   });
 
   const HISTOGRAM_FORM_DATA: QueryFormData = {

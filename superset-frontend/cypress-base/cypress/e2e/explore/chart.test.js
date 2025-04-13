@@ -16,14 +16,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { CHART_LIST } from 'cypress/utils/urls';
 import { interceptGet as interceptDashboardGet } from 'cypress/e2e/dashboard/utils';
-import { FORM_DATA_DEFAULTS, NUM_METRIC } from './visualizations/shared.helper';
+import { CHART_LIST } from 'cypress/utils/urls';
 import {
   interceptFiltering,
   saveChartToDashboard,
   visitSampleChartFromList,
 } from './utils';
+import { FORM_DATA_DEFAULTS, NUM_METRIC } from './visualizations/shared.helper';
 
 // SEARCH_THRESHOLD is 10. We need to add at least 11 dashboards to show search
 const SAMPLE_DASHBOARDS_INDEXES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -124,7 +124,7 @@ describe('Cross-referenced dashboards', () => {
 
 describe('No Results', () => {
   beforeEach(() => {
-    cy.intercept('POST', '/superset/explore_json/**').as('getJson');
+    cy.intercept('POST', '**/superset/explore_json/**').as('getJson');
   });
 
   it('No results message shows up', () => {

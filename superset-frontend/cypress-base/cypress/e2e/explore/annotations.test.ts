@@ -18,8 +18,8 @@
  */
 describe('Annotations', () => {
   beforeEach(() => {
-    cy.intercept('POST', '/superset/explore_json/**').as('postJson');
-    cy.intercept('GET', '/superset/explore_json/**').as('getJson');
+    cy.intercept('POST', '**/superset/explore_json/**').as('postJson');
+    cy.intercept('GET', '**/superset/explore_json/**').as('getJson');
   });
 
   it('Create formula annotation y-axis goal line', () => {

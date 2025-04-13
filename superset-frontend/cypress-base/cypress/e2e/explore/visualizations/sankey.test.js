@@ -18,7 +18,7 @@
  */
 describe('Visualization > Sankey', () => {
   beforeEach(() => {
-    cy.intercept('POST', '/superset/explore_json/**').as('getJson');
+    cy.intercept('POST', '**/superset/explore_json/**').as('getJson');
   });
 
   const SANKEY_FORM_DATA = {

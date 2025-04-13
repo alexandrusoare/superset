@@ -18,7 +18,7 @@
  */
 describe('Visualization > Area', () => {
   beforeEach(() => {
-    cy.intercept('POST', '/superset/explore_json/**').as('getJson');
+    cy.intercept('POST', '**/superset/explore_json/**').as('getJson');
   });
 
   const AREA_FORM_DATA = {
