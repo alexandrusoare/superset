@@ -16,8 +16,9 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+import { configureStore, Store } from '@reduxjs/toolkit';
+import { supersetTheme, ThemeProvider } from '@superset-ui/core';
 import '@testing-library/jest-dom';
-import { ReactNode, ReactElement } from 'react';
 import {
   render,
   RenderOptions,
@@ -25,16 +26,17 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
-import { ThemeProvider, supersetTheme } from '@superset-ui/core';
-import { BrowserRouter } from 'react-router-dom';
-import { Provider } from 'react-redux';
+import userEvent from '@testing-library/user-event';
+import { ReactElement, ReactNode } from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
+import { Provider } from 'react-redux';
+import { BrowserRouter } from 'react-router-dom';
 import reducerIndex from 'spec/helpers/reducerIndex';
-import { QueryParamProvider } from 'use-query-params';
-import { configureStore, Store } from '@reduxjs/toolkit';
 import { api } from 'src/hooks/apiResources/queryApi';
-import userEvent from '@testing-library/user-event';
+import { QueryParamProvider } from 'use-query-params';
+
+export { default as userEvent } from '@testing-library/user-event';
 
 type Options = Omit<RenderOptions, 'queries'> & {
   useRedux?: boolean;
