@@ -33,7 +33,6 @@ import {
   MenuObjectChildProps,
   MenuObjectProps,
 } from 'src/types/bootstrapTypes';
-import { assetUrl } from 'src/utils/assetUrl';
 import { getUrlParam } from 'src/utils/urlUtils';
 import RightMenu from './RightMenu';
 
@@ -314,11 +313,11 @@ export function Menu({
           >
             {isFrontendRoute(window.location.pathname) ? (
               <GenericLink className="navbar-brand" to={brand.path}>
-                <img src={assetUrl(brand.icon)} alt={brand.alt} />
+                <img src={brand.icon} alt={brand.alt} />
               </GenericLink>
             ) : (
               <a className="navbar-brand" href={brand.path} tabIndex={-1}>
-                <img src={assetUrl(brand.icon)} alt={brand.alt} />
+                <img src={brand.icon} alt={brand.alt} />
               </a>
             )}
           </Tooltip>
