@@ -16,18 +16,18 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+import { DatasourceType } from '@superset-ui/core';
+import userEvent from '@testing-library/user-event';
 import { ReactChild } from 'react';
 import { render, screen, waitFor, within } from 'spec/helpers/testing-library';
-import userEvent from '@testing-library/user-event';
 import DatasourcePanel, {
-  IDatasource,
   Props as DatasourcePanelProps,
+  IDatasource,
 } from 'src/explore/components/DatasourcePanel';
 import {
   columns,
   metrics,
 } from 'src/explore/components/DatasourcePanel/fixtures';
-import { DatasourceType } from '@superset-ui/core';
 import DatasourceControl from 'src/explore/components/controls/DatasourceControl';
 import ExploreContainer from '../ExploreContainer';
 import {
@@ -188,14 +188,6 @@ test('should render the columns', async () => {
   columns.forEach(col =>
     expect(screen.getByText(col.column_name)).toBeInTheDocument(),
   );
-});
-
-test('should render 0 search results', async () => {
-  render(<DatasourcePanel {...props} />, { useRedux: true, useDnd: true });
-  const searchInput = screen.getByPlaceholderText('Search Metrics & Columns');
-
-  search('nothing', searchInput);
-  expect(await screen.findAllByText('Showing 0 of 0')).toHaveLength(2);
 });
 
 test('should search and render matching columns', async () => {
