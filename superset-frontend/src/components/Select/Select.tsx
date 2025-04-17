@@ -88,6 +88,7 @@ import { customTagRender } from './CustomTag';
 const Select = forwardRef(
   (
     {
+      className,
       allowClear,
       allowNewOptions = false,
       allowSelectAll = true,
@@ -120,6 +121,7 @@ const Select = forwardRef(
       getPopupContainer,
       oneLine,
       maxTagCount: propsMaxTagCount,
+
       ...props
     }: SelectProps,
     ref: RefObject<HTMLInputElement>,
@@ -603,7 +605,7 @@ const Select = forwardRef(
     };
 
     return (
-      <StyledContainer headerPosition={headerPosition}>
+      <StyledContainer className={className} headerPosition={headerPosition}>
         {header && (
           <StyledHeader headerPosition={headerPosition}>{header}</StyledHeader>
         )}
