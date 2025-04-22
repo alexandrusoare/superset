@@ -16,11 +16,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { t, validateNonEmpty } from '@superset-ui/core';
 import {
   ControlPanelConfig,
   sharedControls,
 } from '@superset-ui/chart-controls';
+import { t, validateNonEmpty } from '@superset-ui/core';
 import { DEFAULT_FORM_DATA } from './types';
 
 const {
@@ -74,7 +74,6 @@ const config: ControlPanelConfig = {
               type: 'CheckboxControl',
               label: t('Allow creation of new values'),
               default: creatable,
-              resetConfig: true,
               affectsDataMask: true,
               renderTrigger: true,
             },
