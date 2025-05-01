@@ -35,7 +35,6 @@ const CURRENT_DATASOURCE = {
   columns: [],
   metrics: [],
   column_formats: {},
-  currency_formats: {},
   verbose_map: {},
   main_dttm_col: '__timestamp',
   // eg. ['["ds", true]', 'ds [asc]']
@@ -49,7 +48,6 @@ const NEW_DATASOURCE = {
   columns: [],
   metrics: [],
   column_formats: {},
-  currency_formats: {},
   verbose_map: {},
   main_dttm_col: '__timestamp',
   // eg. ['["ds", true]', 'ds [asc]']

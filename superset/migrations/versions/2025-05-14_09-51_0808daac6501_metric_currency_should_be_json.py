@@ -22,6 +22,11 @@ Create Date: 2025-05-14 09:51:51.656486
 
 """
 
+from superset.migrations.shared.utils import (
+    cast_json_column_to_text,
+    cast_text_column_to_json,
+)
+
 # revision identifiers, used by Alembic.
 revision = "0808daac6501"
 down_revision = "ac6771f3214f"
@@ -31,11 +36,11 @@ def upgrade():
     """
     Convert the currency column to JSON.
     """
-    pass
+    cast_text_column_to_json("sql_metrics", "currency")
 
 
 def downgrade():
     """
     Convert the currency column back to text.
     """
-    pass
+    cast_json_column_to_text("sql_metrics", "currency")
