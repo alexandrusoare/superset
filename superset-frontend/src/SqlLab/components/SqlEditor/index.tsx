@@ -114,6 +114,7 @@ import {
   LOG_ACTIONS_SQLLAB_STOP_QUERY,
   Logger,
 } from 'src/logger/LogUtils';
+import CopyToClipboard from 'src/components/CopyToClipboard';
 import TemplateParamsEditor from '../TemplateParamsEditor';
 import SouthPane from '../SouthPane';
 import SaveQuery, { QueryPayload } from '../SaveQuery';
@@ -313,6 +314,7 @@ const SqlEditor: FC<Props> = ({
   );
   const [showCreateAsModal, setShowCreateAsModal] = useState(false);
   const [createAs, setCreateAs] = useState('');
+  const currentSQL = useRef<string>(queryEditor.sql);
   const showEmptyState = useMemo(
     () => !database || isEmpty(database),
     [database],
@@ -638,6 +640,7 @@ const SqlEditor: FC<Props> = ({
   );
 
   const onSqlChanged = useEffectEvent((sql: string) => {
+    currentSQL.current = sql;
     dispatch(queryEditorSetSql(queryEditor, sql));
   });
 
@@ -875,6 +878,73 @@ const SqlEditor: FC<Props> = ({
     dispatch(queryEditorSetCursorPosition(queryEditor, newPosition));
   };
 
+  const copyQuery = (callback: (text: string) => void) => {
+    callback(currentSQL.current);
+  };
+  const renderCopyQueryButton = () => (
+    <Button type="primary">{t('COPY QUERY')}</Button>
+  );
+
+  const renderDatasetWarning = () => (
+    <Alert
+      css={css`
+        margin-bottom: ${theme.gridUnit * 2}px;
+        padding-top: ${theme.gridUnit * 4}px;
+        .antd5-alert-action {
+          align-self: center;
+        }
+      `}
+      type="info"
+      action={
+        <CopyToClipboard
+          wrapText={false}
+          copyNode={renderCopyQueryButton()}
+          getText={copyQuery}
+        />
+      }
+      description={
+        <div
+          css={css`
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          `}
+        >
+          <div
+            css={css`
+              display: flex;
+              flex-direction: column;
+            `}
+          >
+            <p
+              css={css`
+                font-size: ${theme.typography.sizes.m}px;
+                font-weight: ${theme.typography.weights.medium};
+                color: ${theme.colors.primary.dark2};
+              `}
+            >
+              {' '}
+              {t(`You are edting a query from the virtual dataset `) +
+                queryEditor.name}
+            </p>
+            <p
+              css={css`
+                font-size: ${theme.typography.sizes.m}px;
+                font-weight: ${theme.typography.weights.normal};
+                color: ${theme.colors.primary.dark2};
+              `}
+            >
+              {t(
+                'After making the changes, copy the query and paste in the virtual dataset SQL snippet settings.',
+              )}{' '}
+            </p>
+          </div>
+        </div>
+      }
+      message=""
+    />
+  );
+
   const queryPane = () => {
     const { aceEditorHeight, southPaneHeight } =
       getAceEditorAndSouthPaneHeights(height, northPercent, southPercent);
@@ -884,7 +954,7 @@ const SqlEditor: FC<Props> = ({
         className="queryPane"
         sizes={[northPercent, southPercent]}
         elementStyle={elementStyle}
-        minSize={200}
+        minSize={queryEditor.isDataset ? 400 : 200}
         direction="vertical"
         gutterSize={SQL_EDITOR_GUTTER_HEIGHT}
         onDragStart={onResizeStart}
@@ -900,6 +970,7 @@ const SqlEditor: FC<Props> = ({
               startQuery={startQuery}
             />
           )}
+          {queryEditor.isDataset && renderDatasetWarning()}
           {isActive && (
             <AceEditorWrapper
               autocomplete={autocompleteEnabled && !isTempId(queryEditor.id)}

@@ -69,6 +69,17 @@ import {
   TagsOutlined,
   UpOutlined,
   UserOutlined,
+  VerticalAlignBottomOutlined,
+  VerticalAlignTopOutlined,
+  VerticalLeftOutlined,
+  VerticalRightOutlined,
+  NumberOutlined,
+  ThunderboltOutlined,
+  FilterOutlined,
+  UnorderedListOutlined,
+  WarningOutlined,
+  KeyOutlined,
+  ExportOutlined,
 } from '@ant-design/icons';
 import { StyledIcon } from './Icon';
 import IconType from './IconType';
@@ -124,6 +135,17 @@ const AntdIcons = {
   TagsOutlined,
   UpOutlined,
   UserOutlined,
+  VerticalAlignBottomOutlined,
+  VerticalAlignTopOutlined,
+  VerticalLeftOutlined,
+  VerticalRightOutlined,
+  NumberOutlined,
+  ThunderboltOutlined,
+  FilterOutlined,
+  UnorderedListOutlined,
+  WarningOutlined,
+  KeyOutlined,
+  ExportOutlined,
 };
 
 const AntdEnhancedIcons = Object.keys(AntdIcons)
