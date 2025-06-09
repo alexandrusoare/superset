@@ -492,6 +492,21 @@ export default function transformProps(
     .map(entry => entry.name || '')
     .concat(extractAnnotationLabels(annotationLayers, annotationData));
 
+  const FONT_CHAR_WIDTH = 7;
+  const FONT_CHAR_HEIGHT = 14;
+
+  const angleRad = (45 * Math.PI) / 180;
+  const effectiveCharWidth =
+    FONT_CHAR_WIDTH * Math.cos(angleRad) +
+    FONT_CHAR_HEIGHT * Math.sin(angleRad);
+  const availableLabelSpace = width - padding.left;
+  console.log(availableLabelSpace);
+  const estimatedMaxChars = Math.floor(
+    availableLabelSpace / effectiveCharWidth,
+  );
+  const safeMaxChars = Math.min(estimatedMaxChars, 30);
+  console.log(safeMaxChars);
+
   let xAxis: any = {
     type: xAxisType,
     name: xAxisTitle,
@@ -499,7 +514,13 @@ export default function transformProps(
     nameLocation: 'middle',
     axisLabel: {
       hideOverlap: true,
-      formatter: xAxisFormatter,
+      formatter:
+        seriesType === 'bar'
+          ? (value: string | number) =>
+              typeof value === 'string' && value.length > safeMaxChars
+                ? `${value.slice(0, safeMaxChars)}…`
+                : value
+          : xAxisFormatter,
       rotate: xAxisLabelRotation,
     },
     minorTick: { show: minorTicks },
