@@ -81,9 +81,12 @@ export function saveChartToDashboard(dashboardName: string) {
       cy.get('[data-test="save-chart-modal-select-dashboard-form"]')
         .first()
         .click();
-      cy.get('.ant-select-selection-search-input').type(dashboardName.slice(0, 3), {
-        force: true,
-      });
+      cy.get('.ant-select-selection-search-input').type(
+        dashboardName.slice(0, 3),
+        {
+          force: true,
+        },
+      );
       cy.get(`.ant-select-item-option[title="${dashboardName}"]`).click();
       cy.getBySel('btn-modal-save').click();
     });
