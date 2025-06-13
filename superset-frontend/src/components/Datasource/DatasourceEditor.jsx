@@ -426,6 +426,10 @@ function ColumnCollectionTable({
                 ).is_dttm;
                 return (
                   <Radio
+                    aria-label={t(
+                      'Set %s as default datetime column',
+                      record.column_name,
+                    )}
                     data-test={`radio-default-dttm-${record.column_name}`}
                     checked={checked}
                     disabled={disabled}
@@ -476,6 +480,10 @@ function ColumnCollectionTable({
                 ).is_dttm;
                 return (
                   <Radio
+                    aria-label={t(
+                      'Set %s as default datetime column',
+                      record.column_name,
+                    )}
                     data-test={`radio-default-dttm-${record.column_name}`}
                     checked={checked}
                     disabled={disabled}

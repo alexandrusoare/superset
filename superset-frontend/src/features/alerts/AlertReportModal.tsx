@@ -71,6 +71,7 @@ import {
 } from 'src/features/alerts/types';
 import { useSelector } from 'react-redux';
 import { UserWithPermissionsAndRoles } from 'src/types/bootstrapTypes';
+import { useOpenerRef } from 'src/hooks/useOpenerRef';
 import NumberInput from './components/NumberInput';
 import { AlertReportCronScheduler } from './components/AlertReportCronScheduler';
 import { NotificationMethod } from './components/NotificationMethod';
@@ -422,6 +423,7 @@ const AlertReportModal: FunctionComponent<AlertReportModalProps> = ({
   isReport = false,
   addSuccessToast,
 }) => {
+  const openerRef = useOpenerRef(show);
   const currentUser = useSelector<any, UserWithPermissionsAndRoles>(
     state => state.user,
   );
@@ -1456,6 +1458,7 @@ const AlertReportModal: FunctionComponent<AlertReportModalProps> = ({
       width="500px"
       centered
       title={<h4 data-test="alert-report-modal-title">{getTitleText()}</h4>}
+      openerRef={openerRef}
     >
       <Collapse
         expandIconPosition="right"
@@ -1495,6 +1498,7 @@ const AlertReportModal: FunctionComponent<AlertReportModalProps> = ({
                     isReport ? t('Enter report name') : t('Enter alert name')
                   }
                   onChange={onInputChange}
+                  aria-required="true"
                 />
               </div>
             </StyledInputContainer>
@@ -1506,6 +1510,7 @@ const AlertReportModal: FunctionComponent<AlertReportModalProps> = ({
               <div data-test="owners-select" className="input-container">
                 <AsyncSelect
                   ariaLabel={t('Owners')}
+                  aria-required="true"
                   allowClear
                   name="owners"
                   mode="multiple"
@@ -1572,6 +1577,7 @@ const AlertReportModal: FunctionComponent<AlertReportModalProps> = ({
               <div className="input-container">
                 <AsyncSelect
                   ariaLabel={t('Database')}
+                  aria-required="true"
                   name="source"
                   placeholder={t('Select database')}
                   value={
@@ -1608,6 +1614,7 @@ const AlertReportModal: FunctionComponent<AlertReportModalProps> = ({
                 readOnly={false}
                 initialValue={resource?.sql}
                 key={currentAlert?.id}
+                aria-required="true"
               />
             </StyledInputContainer>
             <div className="inline-container wrap">
@@ -1619,6 +1626,7 @@ const AlertReportModal: FunctionComponent<AlertReportModalProps> = ({
                 <div className="input-container">
                   <Select
                     ariaLabel={t('Condition')}
+                    aria-required="true"
                     onChange={onConditionChange}
                     placeholder={t('Condition')}
                     value={currentAlert?.validator_config_json?.op || undefined}
@@ -1645,6 +1653,7 @@ const AlertReportModal: FunctionComponent<AlertReportModalProps> = ({
                     }
                     placeholder={t('Value')}
                     onChange={onThresholdChange}
+                    aria-required="true"
                   />
                 </div>
               </StyledInputContainer>
@@ -1679,6 +1688,7 @@ const AlertReportModal: FunctionComponent<AlertReportModalProps> = ({
               value={contentType}
               options={CONTENT_TYPE_OPTIONS}
               placeholder={t('Select content type')}
+              aria-required="true"
             />
           </StyledInputContainer>
           <StyledInputContainer>
@@ -1690,6 +1700,7 @@ const AlertReportModal: FunctionComponent<AlertReportModalProps> = ({
                 </div>
                 <AsyncSelect
                   ariaLabel={t('Chart')}
+                  aria-required="true"
                   name="chart"
                   value={
                     currentAlert?.chart?.label && currentAlert?.chart?.value
@@ -1712,6 +1723,7 @@ const AlertReportModal: FunctionComponent<AlertReportModalProps> = ({
                 </div>
                 <AsyncSelect
                   ariaLabel={t('Dashboard')}
+                  aria-required="true"
                   name="dashboard"
                   value={
                     currentAlert?.dashboard?.label &&
@@ -1742,6 +1754,7 @@ const AlertReportModal: FunctionComponent<AlertReportModalProps> = ({
                 </div>
                 <Select
                   ariaLabel={t('Select format')}
+                  aria-required="true"
                   onChange={onFormatChange}
                   value={reportFormat}
                   options={
@@ -1832,6 +1845,7 @@ const AlertReportModal: FunctionComponent<AlertReportModalProps> = ({
               onTimezoneChange={onTimezoneChange}
               timezone={currentAlert?.timezone}
               minWidth="100%"
+              aria-required="true"
             />
           </StyledInputContainer>
           <StyledInputContainer>
@@ -1842,6 +1856,7 @@ const AlertReportModal: FunctionComponent<AlertReportModalProps> = ({
             <div className="input-container">
               <Select
                 ariaLabel={t('Log retention')}
+                aria-required="true"
                 placeholder={t('Log retention')}
                 onChange={onLogRetentionChange}
                 value={currentAlert?.log_retention}
@@ -1865,6 +1880,7 @@ const AlertReportModal: FunctionComponent<AlertReportModalProps> = ({
                     placeholder={t('Time in seconds')}
                     onChange={onTimeoutVerifyChange}
                     timeUnit={t('seconds')}
+                    aria-required="true"
                   />
                 </div>
               </>
