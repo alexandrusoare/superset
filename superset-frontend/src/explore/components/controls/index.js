@@ -50,6 +50,13 @@ import XAxisSortControl from './XAxisSortControl';
 import CurrencyControl from './CurrencyControl';
 import ColumnConfigControl from './ColumnConfigControl';
 import { ComparisonRangeLabel } from './ComparisonRangeLabel';
+import { getExtensionsRegistry } from '@superset-ui/core';
+
+const extensionsRegistry = getExtensionsRegistry();
+const DateFilterControlExtension = extensionsRegistry.get(
+  'filter.dateFilterControl'
+);
+const DateFilterComponent = DateFilterControlExtension ?? DateFilterControl;
 
 const controlMap = {
   AnnotationLayerControl,
@@ -61,7 +68,7 @@ const controlMap = {
   ColumnConfigControl,
   CurrencyControl,
   DatasourceControl,
-  DateFilterControl,
+  DateFilterControl: DateFilterComponent,
   DndColumnSelectControl,
   DndColumnSelect,
   DndFilterSelect,
