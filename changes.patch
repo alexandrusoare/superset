@@ -1,0 +1,1980 @@
+diff --git a/superset-frontend/packages/superset-ui-core/src/components/ThemedAgGridReact/index.tsx b/superset-frontend/packages/superset-ui-core/src/components/ThemedAgGridReact/index.tsx
+index 5e95a9c000..4a6a2cf0a9 100644
+--- a/superset-frontend/packages/superset-ui-core/src/components/ThemedAgGridReact/index.tsx
++++ b/superset-frontend/packages/superset-ui-core/src/components/ThemedAgGridReact/index.tsx
+@@ -161,6 +161,7 @@ export type { CustomCellRendererProps } from 'ag-grid-react';
+ export type {
+   ColDef,
+   Column,
++  ColumnState,
+   GridOptions,
+   GridState,
+   GridReadyEvent,
+diff --git a/superset-frontend/packages/superset-ui-core/src/types/AgGrid.ts b/superset-frontend/packages/superset-ui-core/src/types/AgGrid.ts
+new file mode 100644
+index 0000000000..5a0d0b119c
+--- /dev/null
++++ b/superset-frontend/packages/superset-ui-core/src/types/AgGrid.ts
+@@ -0,0 +1,116 @@
++/**
++ * Licensed to the Apache Software Foundation (ASF) under one
++ * or more contributor license agreements.  See the NOTICE file
++ * distributed with this work for additional information
++ * regarding copyright ownership.  The ASF licenses this file
++ * to you under the Apache License, Version 2.0 (the
++ * "License"); you may not use this file except in compliance
++ * with the License.  You may obtain a copy of the License at
++ *
++ *   http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing,
++ * software distributed under the License is distributed on an
++ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
++ * KIND, either express or implied.  See the License for the
++ * specific language governing permissions and limitations
++ * under the License.
++ */
++
++import type { ColumnState, SortModelItem } from 'ag-grid-community';
++
++// AG Grid filter type enums
++export enum AgGridFilterType {
++  Text = 'text',
++  Number = 'number',
++  Date = 'date',
++  Set = 'set',
++}
++
++export enum AgGridTextFilterOperator {
++  Equals = 'equals',
++  NotEqual = 'notEqual',
++  Contains = 'contains',
++  NotContains = 'notContains',
++  StartsWith = 'startsWith',
++  EndsWith = 'endsWith',
++  Blank = 'blank',
++  NotBlank = 'notBlank',
++}
++
++export enum AgGridNumberFilterOperator {
++  Equals = 'equals',
++  NotEqual = 'notEqual',
++  LessThan = 'lessThan',
++  LessThanOrEqual = 'lessThanOrEqual',
++  GreaterThan = 'greaterThan',
++  GreaterThanOrEqual = 'greaterThanOrEqual',
++  InRange = 'inRange',
++  Blank = 'blank',
++  NotBlank = 'notBlank',
++}
++
++/**
++ * @deprecated Use ColumnState from 'ag-grid-community' instead
++ */
++export type AgGridColumnState = ColumnState;
++
++/**
++ * Extend AG Grid's SortModelItem to add sortIndex for multi-column sorting support
++ */
++export interface AgGridSortModel extends SortModelItem {
++  sortIndex?: number;
++}
++
++interface AgGridTextFilter {
++  filterType: AgGridFilterType.Text;
++  type?: AgGridTextFilterOperator;
++  filter?: string;
++}
++
++interface AgGridNumberFilter {
++  filterType: AgGridFilterType.Number;
++  type?: AgGridNumberFilterOperator;
++  filter?: number;
++  filterTo?: number;
++}
++
++interface AgGridSetFilter {
++  filterType: AgGridFilterType.Set;
++  values?: string[];
++}
++
++interface AgGridDateFilter {
++  filterType: AgGridFilterType.Date;
++  type?: AgGridNumberFilterOperator;
++  dateFrom?: string;
++  dateTo?: string;
++}
++
++type AgGridFilter =
++  | AgGridTextFilter
++  | AgGridNumberFilter
++  | AgGridSetFilter
++  | AgGridDateFilter;
++
++export interface AgGridFilterModel {
++  [colId: string]: AgGridFilter;
++}
++
++export interface AgGridChartState {
++  columnState: ColumnState[];
++  sortModel: AgGridSortModel[];
++  filterModel: AgGridFilterModel;
++  columnOrder?: string[];
++  pageSize?: number;
++  currentPage?: number;
++}
++
++// Query filter clause for backend processing
++// This represents the converted AG Grid filter in a format the backend can understand
++export interface AgGridQueryFilterClause {
++  expressionType: 'SIMPLE';
++  subject: string;
++  operator: string;
++  comparator: string | number | string[];
++}
+diff --git a/superset-frontend/packages/superset-ui-core/src/types/index.ts b/superset-frontend/packages/superset-ui-core/src/types/index.ts
+index cb6e6dcfcb..a868ae76ff 100644
+--- a/superset-frontend/packages/superset-ui-core/src/types/index.ts
++++ b/superset-frontend/packages/superset-ui-core/src/types/index.ts
+@@ -20,6 +20,7 @@ import { NumberFormatter } from '../number-format';
+ import { CurrencyFormatter } from '../currency-format';
+
+ export * from '../query/types';
++export * from './AgGrid';
+
+ export type Maybe<T> = T | null;
+
+diff --git a/superset-frontend/plugins/plugin-chart-ag-grid-table/src/AgGridTable/index.tsx b/superset-frontend/plugins/plugin-chart-ag-grid-table/src/AgGridTable/index.tsx
+index 8b830b2ed4..75b36f60f9 100644
+--- a/superset-frontend/plugins/plugin-chart-ag-grid-table/src/AgGridTable/index.tsx
++++ b/superset-frontend/plugins/plugin-chart-ag-grid-table/src/AgGridTable/index.tsx
+@@ -22,24 +22,26 @@ import {
+   useMemo,
+   useRef,
+   memo,
++  FunctionComponent,
+   useState,
+   ChangeEvent,
+   useEffect,
++  type RefObject,
+ } from 'react';
+
+-import { ThemedAgGridReact } from '@superset-ui/core/components';
++import { Constants, ThemedAgGridReact } from '@superset-ui/core/components';
+ import {
+   AgGridReact,
+   AllCommunityModule,
+   ClientSideRowModelModule,
+   type ColDef,
++  type ColumnState,
+   ModuleRegistry,
+   GridReadyEvent,
+   GridState,
+   CellClickedEvent,
+   IMenuActionParams,
+ } from '@superset-ui/core/components/ThemedAgGridReact';
+-import { type FunctionComponent } from 'react';
+ import { JsonObject, DataRecordValue, DataRecord, t } from '@superset-ui/core';
+ import { SearchOutlined } from '@ant-design/icons';
+ import { debounce, isEqual } from 'lodash';
+@@ -49,6 +51,11 @@ import { SearchOption, SortByItem } from '../types';
+ import getInitialSortState, { shouldSort } from '../utils/getInitialSortState';
+ import { PAGE_SIZE_OPTIONS } from '../consts';
+
++export interface AgGridState extends Partial<GridState> {
++  timestamp?: number;
++  hasChanges?: boolean;
++}
++
+ export interface AgGridTableProps {
+   gridTheme?: string;
+   isDarkMode?: boolean;
+@@ -80,6 +87,9 @@ export interface AgGridTableProps {
+   cleanedTotals: DataRecord;
+   showTotals: boolean;
+   width: number;
++  onColumnStateChange?: (state: AgGridState) => void;
++  gridRef?: RefObject<AgGridReact>;
++  savedAgGridState?: JsonObject;
+ }
+
+ ModuleRegistry.registerModules([AllCommunityModule, ClientSideRowModelModule]);
+@@ -114,11 +124,14 @@ const AgGridDataTable: FunctionComponent<AgGridTableProps> = memo(
+     cleanedTotals,
+     showTotals,
+     width,
++    onColumnStateChange,
++    savedAgGridState,
+   }) => {
+     const gridRef = useRef<AgGridReact>(null);
+     const inputRef = useRef<HTMLInputElement>(null);
+     const rowData = useMemo(() => data, [data]);
+     const containerRef = useRef<HTMLDivElement>(null);
++    const lastCapturedStateRef = useRef<string | null>(null);
+
+     const searchId = `search-${id}`;
+     const gridInitialState: GridState = {
+@@ -234,6 +247,55 @@ const AgGridDataTable: FunctionComponent<AgGridTableProps> = memo(
+       [serverPagination, gridInitialState, percentMetrics, onSortChange],
+     );
+
++    const handleGridStateChange = useCallback(
++      debounce(() => {
++        if (onColumnStateChange && gridRef.current?.api) {
++          try {
++            const { api } = gridRef.current;
++
++            const columnState = api.getColumnState ? api.getColumnState() : [];
++
++            const filterModel = api.getFilterModel ? api.getFilterModel() : {};
++
++            const sortModel = columnState
++              .filter(col => col.sort)
++              .map(col => ({
++                colId: col.colId,
++                sort: col.sort,
++                sortIndex: col.sortIndex || 0,
++              }))
++              .sort((a, b) => (a.sortIndex || 0) - (b.sortIndex || 0));
++
++            const stateToSave = {
++              columnState,
++              sortModel,
++              filterModel,
++              timestamp: Date.now(),
++            };
++
++            const stateHash = JSON.stringify({
++              columnOrder: columnState.map(c => c.colId),
++              sorts: sortModel,
++              filters: filterModel,
++            });
++
++            if (stateHash !== lastCapturedStateRef.current) {
++              lastCapturedStateRef.current = stateHash;
++
++              onColumnStateChange(stateToSave);
++            }
++          } catch (error) {
++            console.warn('Error capturing AG Grid state:', error);
++            onColumnStateChange({
++              timestamp: Date.now(),
++              hasChanges: true,
++            });
++          }
++        }
++      }, Constants.SLOW_DEBOUNCE),
++      [onColumnStateChange],
++    );
++
+     useEffect(() => {
+       if (
+         hasServerPageLengthChanged &&
+@@ -257,6 +319,24 @@ const AgGridDataTable: FunctionComponent<AgGridTableProps> = memo(
+     const onGridReady = (params: GridReadyEvent) => {
+       // This will make columns fill the grid width
+       params.api.sizeColumnsToFit();
++
++      // Restore saved AG Grid state from permalink if available
++      if (savedAgGridState && params.api) {
++        try {
++          if (savedAgGridState.columnState) {
++            params.api.applyColumnState?.({
++              state: savedAgGridState.columnState as ColumnState[],
++              applyOrder: true,
++            });
++          }
++
++          if (savedAgGridState.filterModel) {
++            params.api.setFilterModel?.(savedAgGridState.filterModel);
++          }
++        } catch {
++          // Silently fail if state restoration fails
++        }
++      }
+     };
+
+     return (
+@@ -313,7 +393,9 @@ const AgGridDataTable: FunctionComponent<AgGridTableProps> = memo(
+           rowSelection="multiple"
+           animateRows
+           onCellClicked={handleCrossFilter}
++          onStateUpdated={handleGridStateChange}
+           initialState={gridInitialState}
++          maintainColumnOrder
+           suppressAggFuncInHeader
+           enableCellTextSelection
+           quickFilterText={serverPagination ? '' : quickFilterText}
+diff --git a/superset-frontend/plugins/plugin-chart-ag-grid-table/src/AgGridTableChart.tsx b/superset-frontend/plugins/plugin-chart-ag-grid-table/src/AgGridTableChart.tsx
+index 1307869e82..15b25fcfa5 100644
+--- a/superset-frontend/plugins/plugin-chart-ag-grid-table/src/AgGridTableChart.tsx
++++ b/superset-frontend/plugins/plugin-chart-ag-grid-table/src/AgGridTableChart.tsx
+@@ -82,6 +82,8 @@ export default function TableChart<D extends DataRecord = DataRecord>(
+     columnColorFormatters,
+     basicColorFormatters,
+     width,
++    onChartStateChange,
++    savedAgGridState,
+   } = props;
+
+   const [searchOptions, setSearchOptions] = useState<SearchOption[]>([]);
+@@ -110,6 +112,15 @@ export default function TableChart<D extends DataRecord = DataRecord>(
+     comparisonColumns?.[0]?.key,
+   ]);
+
++  const handleColumnStateChange = useCallback(
++    agGridState => {
++      if (onChartStateChange) {
++        onChartStateChange(agGridState);
++      }
++    },
++    [onChartStateChange],
++  );
++
+   const filteredColumns = useMemo(() => {
+     if (!isUsingTimeComparison) {
+       return columns;
+@@ -289,6 +300,8 @@ export default function TableChart<D extends DataRecord = DataRecord>(
+         cleanedTotals={totals || {}}
+         showTotals={showTotals}
+         width={width}
++        onColumnStateChange={handleColumnStateChange}
++        savedAgGridState={savedAgGridState}
+       />
+     </StyledChartContainer>
+   );
+diff --git a/superset-frontend/plugins/plugin-chart-ag-grid-table/src/buildQuery.ts b/superset-frontend/plugins/plugin-chart-ag-grid-table/src/buildQuery.ts
+index 64b091e87f..985c5964ba 100644
+--- a/superset-frontend/plugins/plugin-chart-ag-grid-table/src/buildQuery.ts
++++ b/superset-frontend/plugins/plugin-chart-ag-grid-table/src/buildQuery.ts
+@@ -22,6 +22,8 @@ import {
+   ensureIsArray,
+   getMetricLabel,
+   isPhysicalColumn,
++  QueryFormColumn,
++  QueryFormMetric,
+   QueryFormOrderBy,
+   QueryMode,
+   QueryObject,
+@@ -211,22 +213,139 @@ const buildQuery: BuildQuery<TableChartFormData> = (
+       moreProps.row_offset = currentPage * pageSize;
+     }
+
+-    // getting sort by in case of server pagination from own state
+     let sortByFromOwnState: QueryFormOrderBy[] | undefined;
+-    if (Array.isArray(ownState?.sortBy) && ownState?.sortBy.length > 0) {
+-      const sortByItem = ownState?.sortBy[0];
+-      sortByFromOwnState = [[sortByItem?.key, !sortByItem?.desc]];
++
++    const sortSource =
++      isDownloadQuery && ownState?.sortModel
++        ? ownState.sortModel
++        : ownState?.sortBy;
++
++    if (Array.isArray(sortSource) && sortSource.length > 0) {
++      const mapColIdToIdentifier = (colId: string): string | undefined => {
++        const matchingColumn = columns.find((col: any) => {
++          if (typeof col === 'string') return col === colId;
++          return col?.sqlExpression === colId || col?.label === colId;
++        });
++
++        if (matchingColumn) {
++          return typeof matchingColumn === 'string'
++            ? matchingColumn
++            : matchingColumn.sqlExpression || matchingColumn.label;
++        }
++
++        const matchingMetric = (metrics || []).find((met: any) => {
++          if (typeof met === 'string')
++            return met === colId || `%${met}` === colId;
++          const metLabel = getMetricLabel(met);
++          return (
++            metLabel === colId ||
++            met?.label === colId ||
++            `%${metLabel}` === colId
++          );
++        });
++
++        if (matchingMetric) {
++          return typeof matchingMetric === 'string'
++            ? matchingMetric
++            : getMetricLabel(matchingMetric);
++        }
++
++        return colId;
++      };
++
++      sortByFromOwnState = sortSource
++        .map((sortItem: any) => {
++          const colId = sortItem?.colId || sortItem?.key;
++          const sortKey = mapColIdToIdentifier(colId);
++          if (!sortKey) return null;
++          const isDesc = sortItem?.sort === 'desc' || sortItem?.desc;
++          return [sortKey, !isDesc] as QueryFormOrderBy;
++        })
++        .filter((item): item is QueryFormOrderBy => item !== null);
++
++      // Add secondary sort for stable ordering (matches AG Grid's stable sort behavior)
++      if (sortByFromOwnState.length === 1 && isDownloadQuery && orderby) {
++        const primarySort = sortByFromOwnState[0][0];
++        orderby.forEach(orderItem => {
++          if (orderItem[0] !== primarySort) {
++            sortByFromOwnState!.push(orderItem);
++          }
++        });
++      }
++    }
++
++    // Note: In Superset, "columns" are dimensions and "metrics" are measures,
++    // but AG Grid treats them all as "columns" in the UI
++    let orderedColumns = columns;
++    let orderedMetrics = metrics;
++
++    if (
++      isDownloadQuery &&
++      ownState.columnOrder &&
++      Array.isArray(ownState.columnOrder)
++    ) {
++      type ColumnOrMetric = QueryFormColumn | QueryFormMetric;
++
++      const matchesColId = (item: ColumnOrMetric, colId: string): boolean => {
++        if (typeof item === 'string') {
++          return item === colId;
++        }
++
++        // Check AdhocColumn properties
++        if ('sqlExpression' in item || 'columnName' in item) {
++          return (
++            (item as AdhocColumn).sqlExpression === colId ||
++            item.label === colId
++          );
++        }
++
++        // Check metric properties
++        return getMetricLabel(item) === colId || item.label === colId;
++      };
++
++      const reorderByColumnOrder = (
++        items: ColumnOrMetric[],
++      ): ColumnOrMetric[] => {
++        const ordered: ColumnOrMetric[] = [];
++        const remaining = new Set(items);
++
++        ownState.columnOrder.forEach((colId: string) => {
++          const match = items.find(
++            item => remaining.has(item) && matchesColId(item, colId),
++          );
++          if (match) {
++            ordered.push(match);
++            remaining.delete(match);
++          }
++        });
++
++        remaining.forEach(item => ordered.push(item));
++        return ordered;
++      };
++
++      orderedColumns = reorderByColumnOrder(columns) as typeof columns;
++      orderedMetrics = reorderByColumnOrder(metrics || []) as typeof metrics;
+     }
+
+     let queryObject = {
+       ...baseQueryObject,
+-      columns,
+-      extras,
++      columns: orderedColumns,
++      extras: {
++        ...extras,
++        // Flag to indicate AG Grid chart - enables metric column filtering
++        is_ag_grid_chart: true,
++        // Pass column order to enable mixed column+metric ordering
++        ...(isDownloadQuery &&
++        ownState.columnOrder &&
++        Array.isArray(ownState.columnOrder)
++          ? { column_order: ownState.columnOrder }
++          : {}),
++      },
+       orderby:
+-        formData.server_pagination && sortByFromOwnState
++        (formData.server_pagination || isDownloadQuery) && sortByFromOwnState
+           ? sortByFromOwnState
+           : orderby,
+-      metrics,
++      metrics: orderedMetrics,
+       post_processing: postProcessing,
+       time_offsets: timeOffsets,
+       ...moreProps,
+@@ -292,6 +411,18 @@ const buildQuery: BuildQuery<TableChartFormData> = (
+       }
+     }
+
++    // Apply AG Grid filters from export (already in standard filter format)
++    if (
++      isDownloadQuery &&
++      Array.isArray(ownState.filters) &&
++      ownState.filters.length > 0
++    ) {
++      queryObject = {
++        ...queryObject,
++        filters: [...(queryObject.filters || []), ...ownState.filters],
++      };
++    }
++
+     // Now since row limit control is always visible even
+     // in case of server pagination
+     // we must use row limit from form data
+diff --git a/superset-frontend/plugins/plugin-chart-ag-grid-table/src/transformProps.ts b/superset-frontend/plugins/plugin-chart-ag-grid-table/src/transformProps.ts
+index daef030b29..85ce3e4d66 100644
+--- a/superset-frontend/plugins/plugin-chart-ag-grid-table/src/transformProps.ts
++++ b/superset-frontend/plugins/plugin-chart-ag-grid-table/src/transformProps.ts
+@@ -469,7 +469,7 @@ const transformProps = (
+     queriesData = [],
+     ownState: serverPaginationData,
+     filterState,
+-    hooks: { setDataMask = () => {} },
++    hooks: { setDataMask = () => {}, onChartStateChange },
+     emitCrossFilters,
+   } = chartProps;
+
+@@ -734,6 +734,8 @@ const transformProps = (
+     basicColorColumnFormatters,
+     basicColorFormatters,
+     formData,
++    savedAgGridState: serverPaginationData?.savedAgGridState,
++    onChartStateChange,
+   };
+ };
+
+diff --git a/superset-frontend/plugins/plugin-chart-ag-grid-table/src/types.ts b/superset-frontend/plugins/plugin-chart-ag-grid-table/src/types.ts
+index 937c6ed778..1556b84c81 100644
+--- a/superset-frontend/plugins/plugin-chart-ag-grid-table/src/types.ts
++++ b/superset-frontend/plugins/plugin-chart-ag-grid-table/src/types.ts
+@@ -176,6 +176,8 @@ export interface AgGridTableChartTransformedProps<
+   basicColorFormatters?: { [Key: string]: BasicColorFormatterType }[];
+   basicColorColumnFormatters?: { [Key: string]: BasicColorFormatterType }[];
+   formData: TableChartFormData;
++  onChartStateChange?: (chartState: JsonObject) => void;
++  savedAgGridState?: JsonObject;
+ }
+
+ export enum ColorSchemeEnum {
+diff --git a/superset-frontend/plugins/plugin-chart-ag-grid-table/test/buildQuery.test.ts b/superset-frontend/plugins/plugin-chart-ag-grid-table/test/buildQuery.test.ts
+new file mode 100644
+index 0000000000..075a5ce59a
+--- /dev/null
++++ b/superset-frontend/plugins/plugin-chart-ag-grid-table/test/buildQuery.test.ts
+@@ -0,0 +1,478 @@
++/**
++ * Licensed to the Apache Software Foundation (ASF) under one
++ * or more contributor license agreements.  See the NOTICE file
++ * distributed with this work for additional information
++ * regarding copyright ownership.  The ASF licenses this file
++ * to you under the Apache License, Version 2.0 (the
++ * "License"); you may not use this file except in compliance
++ * with the License.  You may obtain a copy of the License at
++ *
++ *   http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing,
++ * software distributed under the License is distributed on an
++ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
++ * KIND, either express or implied.  See the License for the
++ * specific language governing permissions and limitations
++ * under the License.
++ */
++import { AdhocColumn, QueryMode, VizType } from '@superset-ui/core';
++import buildQuery from '../src/buildQuery';
++import { TableChartFormData } from '../src/types';
++
++const basicFormData: TableChartFormData = {
++  viz_type: VizType.Table,
++  datasource: '11__table',
++  query_mode: QueryMode.Aggregate,
++  groupby: ['state'],
++  metrics: ['count'],
++};
++
++const createAdhocColumn = (
++  sqlExpression: string,
++  label: string,
++): AdhocColumn => ({
++  sqlExpression,
++  label,
++  expressionType: 'SQL',
++});
++
++describe('plugin-chart-ag-grid-table', () => {
++  describe('buildQuery - sort mapping for server pagination', () => {
++    it('should map string column colId to backend identifier', () => {
++      const query = buildQuery(
++        {
++          ...basicFormData,
++          server_pagination: true,
++        },
++        {
++          ownState: {
++            sortBy: [{ key: 'state', desc: false }],
++          },
++        },
++      ).queries[0];
++
++      expect(query.orderby).toEqual([['state', true]]);
++    });
++
++    it('should map AdhocColumn colId by sqlExpression', () => {
++      const adhocColumn = createAdhocColumn('degree_type', 'Highest Degree');
++
++      const query = buildQuery(
++        {
++          ...basicFormData,
++          server_pagination: true,
++          groupby: [adhocColumn],
++        },
++        {
++          ownState: {
++            sortBy: [{ key: 'degree_type', desc: false }],
++          },
++        },
++      ).queries[0];
++
++      expect(query.orderby).toEqual([['degree_type', true]]);
++    });
++
++    it('should map AdhocColumn colId by label', () => {
++      const adhocColumn = createAdhocColumn('degree_type', 'Highest Degree');
++
++      const query = buildQuery(
++        {
++          ...basicFormData,
++          server_pagination: true,
++          groupby: [adhocColumn],
++        },
++        {
++          ownState: {
++            sortBy: [{ key: 'Highest Degree', desc: false }],
++          },
++        },
++      ).queries[0];
++
++      expect(query.orderby).toEqual([['degree_type', true]]);
++    });
++
++    it('should map string metric colId to backend identifier', () => {
++      const query = buildQuery(
++        {
++          ...basicFormData,
++          server_pagination: true,
++          metrics: ['SUM(revenue)'],
++        },
++        {
++          ownState: {
++            sortBy: [{ key: 'SUM(revenue)', desc: true }],
++          },
++        },
++      ).queries[0];
++
++      expect(query.orderby).toEqual([['SUM(revenue)', false]]);
++    });
++
++    it('should map percent metric with % prefix', () => {
++      const query = buildQuery(
++        {
++          ...basicFormData,
++          server_pagination: true,
++          metrics: ['revenue'],
++          percent_metrics: ['revenue'],
++        },
++        {
++          ownState: {
++            sortBy: [{ key: '%revenue', desc: false }],
++          },
++        },
++      ).queries[0];
++
++      expect(query.orderby).toEqual([['revenue', true]]);
++    });
++
++    it('should handle desc sort direction correctly', () => {
++      const query = buildQuery(
++        {
++          ...basicFormData,
++          server_pagination: true,
++        },
++        {
++          ownState: {
++            sortBy: [{ key: 'state', desc: true }],
++          },
++        },
++      ).queries[0];
++
++      expect(query.orderby).toEqual([['state', false]]);
++    });
++  });
++
++  describe('buildQuery - CSV export with sortModel', () => {
++    it('should use sortModel for download queries', () => {
++      const query = buildQuery(
++        {
++          ...basicFormData,
++          result_format: 'csv',
++        },
++        {
++          ownState: {
++            sortModel: [{ colId: 'state', sort: 'asc' }],
++            sortBy: [{ key: 'other', desc: false }],
++          },
++        },
++      ).queries[0];
++
++      expect(query.orderby).toEqual([
++        ['state', true],
++        ['count', false],
++      ]);
++    });
++
++    it('should map sortModel with desc direction', () => {
++      const query = buildQuery(
++        {
++          ...basicFormData,
++          result_format: 'csv',
++        },
++        {
++          ownState: {
++            sortModel: [{ colId: 'state', sort: 'desc' }],
++          },
++        },
++      ).queries[0];
++
++      expect(query.orderby[0]).toEqual(['state', false]);
++    });
++
++    it('should handle multi-column sort from sortModel', () => {
++      const query = buildQuery(
++        {
++          ...basicFormData,
++          groupby: ['state', 'city'],
++          result_format: 'csv',
++        },
++        {
++          ownState: {
++            sortModel: [
++              { colId: 'state', sort: 'asc', sortIndex: 0 },
++              { colId: 'city', sort: 'desc', sortIndex: 1 },
++            ],
++          },
++        },
++      ).queries[0];
++
++      expect(query.orderby).toEqual([
++        ['state', true],
++        ['city', false],
++      ]);
++    });
++  });
++
++  describe('buildQuery - stable sort tie-breaker', () => {
++    it('should add default orderby as tie-breaker for single-column CSV export', () => {
++      const query = buildQuery(
++        {
++          ...basicFormData,
++          result_format: 'csv',
++          metrics: ['count'],
++        },
++        {
++          ownState: {
++            sortModel: [{ colId: 'state', sort: 'asc' }],
++          },
++        },
++      ).queries[0];
++
++      expect(query.orderby).toEqual([
++        ['state', true],
++        ['count', false],
++      ]);
++    });
++
++    it('should not add tie-breaker if primary sort matches default orderby', () => {
++      const query = buildQuery(
++        {
++          ...basicFormData,
++          result_format: 'csv',
++          metrics: ['count'],
++        },
++        {
++          ownState: {
++            sortModel: [{ colId: 'count', sort: 'desc' }],
++          },
++        },
++      ).queries[0];
++
++      expect(query.orderby).toEqual([['count', false]]);
++    });
++
++    it('should not add tie-breaker for multi-column sorts', () => {
++      const query = buildQuery(
++        {
++          ...basicFormData,
++          groupby: ['state', 'city'],
++          result_format: 'csv',
++        },
++        {
++          ownState: {
++            sortModel: [
++              { colId: 'state', sort: 'asc' },
++              { colId: 'city', sort: 'desc' },
++            ],
++          },
++        },
++      ).queries[0];
++
++      expect(query.orderby).toEqual([
++        ['state', true],
++        ['city', false],
++      ]);
++    });
++
++    it('should not add tie-breaker for non-download queries with server pagination', () => {
++      const query = buildQuery(
++        {
++          ...basicFormData,
++          server_pagination: true,
++        },
++        {
++          ownState: {
++            sortBy: [{ key: 'state', desc: false }],
++          },
++        },
++      ).queries[0];
++
++      expect(query.orderby).toEqual([['state', true]]);
++    });
++  });
++
++  describe('buildQuery - filter handling for CSV export', () => {
++    it('should apply AG Grid filters for download queries', () => {
++      const query = buildQuery(
++        {
++          ...basicFormData,
++          result_format: 'csv',
++        },
++        {
++          ownState: {
++            filters: [
++              {
++                col: 'state',
++                op: 'IN',
++                val: ['CA', 'NY'],
++              },
++            ],
++          },
++        },
++      ).queries[0];
++
++      expect(query.filters).toContainEqual({
++        col: 'state',
++        op: 'IN',
++        val: ['CA', 'NY'],
++      });
++    });
++
++    it('should append AG Grid filters to existing filters', () => {
++      const query = buildQuery(
++        {
++          ...basicFormData,
++          result_format: 'csv',
++          adhoc_filters: [
++            {
++              expressionType: 'SIMPLE',
++              subject: 'country',
++              operator: '==',
++              comparator: 'USA',
++              clause: 'WHERE',
++            },
++          ],
++        },
++        {
++          ownState: {
++            filters: [
++              {
++                col: 'state',
++                op: 'IN',
++                val: ['CA', 'NY'],
++              },
++            ],
++          },
++        },
++      ).queries[0];
++
++      expect(query.filters?.length).toBeGreaterThan(1);
++      expect(query.filters).toContainEqual({
++        col: 'state',
++        op: 'IN',
++        val: ['CA', 'NY'],
++      });
++    });
++
++    it('should not apply filters for non-download queries', () => {
++      const query = buildQuery(basicFormData, {
++        ownState: {
++          filters: [
++            {
++              col: 'state',
++              op: 'IN',
++              val: ['CA', 'NY'],
++            },
++          ],
++        },
++      }).queries[0];
++
++      expect(query.filters).not.toContainEqual({
++        col: 'state',
++        op: 'IN',
++        val: ['CA', 'NY'],
++      });
++    });
++
++    it('should handle empty filters array', () => {
++      const query = buildQuery(
++        {
++          ...basicFormData,
++          result_format: 'csv',
++        },
++        {
++          ownState: {
++            filters: [],
++          },
++        },
++      ).queries[0];
++
++      expect(query.filters).toBeDefined();
++    });
++  });
++
++  describe('buildQuery - column reordering for CSV export', () => {
++    it('should reorder columns based on columnOrder', () => {
++      const query = buildQuery(
++        {
++          ...basicFormData,
++          groupby: ['state', 'city', 'country'],
++          result_format: 'csv',
++        },
++        {
++          ownState: {
++            columnOrder: ['city', 'country', 'state', 'count'],
++          },
++        },
++      ).queries[0];
++
++      expect(query.columns).toEqual(['city', 'country', 'state']);
++    });
++
++    it('should reorder metrics based on columnOrder', () => {
++      const query = buildQuery(
++        {
++          ...basicFormData,
++          metrics: ['count', 'revenue', 'profit'],
++          result_format: 'csv',
++        },
++        {
++          ownState: {
++            columnOrder: ['state', 'profit', 'count', 'revenue'],
++          },
++        },
++      ).queries[0];
++
++      expect(query.metrics).toEqual(['profit', 'count', 'revenue']);
++    });
++
++    it('should preserve unmatched columns at the end', () => {
++      const query = buildQuery(
++        {
++          ...basicFormData,
++          groupby: ['state', 'city', 'country'],
++          result_format: 'csv',
++        },
++        {
++          ownState: {
++            columnOrder: ['city'],
++          },
++        },
++      ).queries[0];
++
++      expect(query.columns[0]).toEqual('city');
++      expect(query.columns).toContain('state');
++      expect(query.columns).toContain('country');
++    });
++
++    it('should match AdhocColumn by sqlExpression in columnOrder', () => {
++      const adhocColumn = createAdhocColumn('degree_type', 'Highest Degree');
++
++      const query = buildQuery(
++        {
++          ...basicFormData,
++          groupby: ['state', adhocColumn],
++          result_format: 'csv',
++        },
++        {
++          ownState: {
++            columnOrder: ['degree_type', 'state'],
++          },
++        },
++      ).queries[0];
++
++      expect(query.columns[0]).toMatchObject({
++        sqlExpression: 'degree_type',
++      });
++    });
++
++    it('should not reorder for non-download queries', () => {
++      const query = buildQuery(
++        {
++          ...basicFormData,
++          groupby: ['state', 'city'],
++        },
++        {
++          ownState: {
++            columnOrder: ['city', 'state'],
++          },
++        },
++      ).queries[0];
++
++      expect(query.columns).toEqual(['state', 'city']);
++    });
++  });
++});
+diff --git a/superset-frontend/src/components/Chart/Chart.tsx b/superset-frontend/src/components/Chart/Chart.tsx
+index 201b676953..3ad3531f63 100644
+--- a/superset-frontend/src/components/Chart/Chart.tsx
++++ b/superset-frontend/src/components/Chart/Chart.tsx
+@@ -80,6 +80,7 @@ export interface ChartProps {
+   datasetsStatus?: 'loading' | 'error' | 'complete';
+   isInView?: boolean;
+   emitCrossFilters?: boolean;
++  onChartStateChange?: (chartState: JsonObject) => void;
+ }
+
+ export type Actions = {
+diff --git a/superset-frontend/src/components/Chart/ChartRenderer.jsx b/superset-frontend/src/components/Chart/ChartRenderer.jsx
+index 410a588813..61cf48fdb5 100644
+--- a/superset-frontend/src/components/Chart/ChartRenderer.jsx
++++ b/superset-frontend/src/components/Chart/ChartRenderer.jsx
+@@ -64,6 +64,7 @@ const propTypes = {
+   postTransformProps: PropTypes.func,
+   source: PropTypes.oneOf([ChartSource.Dashboard, ChartSource.Explore]),
+   emitCrossFilters: PropTypes.bool,
++  onChartStateChange: PropTypes.func,
+ };
+
+ const BLANK = {};
+@@ -126,6 +127,7 @@ class ChartRenderer extends Component {
+         this.props.actions?.updateDataMask(this.props.chartId, dataMask);
+       },
+       onLegendScroll: this.handleLegendScroll,
++      onChartStateChange: this.props.onChartStateChange,
+     };
+
+     // TODO: queriesResponse comes from Redux store but it's being edited by
+diff --git a/superset-frontend/src/dashboard/actions/dashboardState.js b/superset-frontend/src/dashboard/actions/dashboardState.js
+index c92faa8ab3..20cd25a241 100644
+--- a/superset-frontend/src/dashboard/actions/dashboardState.js
++++ b/superset-frontend/src/dashboard/actions/dashboardState.js
+@@ -748,6 +748,27 @@ export function setFullSizeChartId(chartId) {
+   return { type: SET_FULL_SIZE_CHART_ID, chartId };
+ }
+
++export const UPDATE_CHART_STATE = 'UPDATE_CHART_STATE';
++export function updateChartState(chartId, vizType, chartState) {
++  return {
++    type: UPDATE_CHART_STATE,
++    chartId,
++    vizType,
++    chartState,
++    lastModified: Date.now(),
++  };
++}
++
++export const REMOVE_CHART_STATE = 'REMOVE_CHART_STATE';
++export function removeChartState(chartId) {
++  return { type: REMOVE_CHART_STATE, chartId };
++}
++
++export const RESTORE_CHART_STATES = 'RESTORE_CHART_STATES';
++export function restoreChartStates(chartStates) {
++  return { type: RESTORE_CHART_STATES, chartStates };
++}
++
+ // Undo history ---------------------------------------------------------------
+ export const SET_MAX_UNDO_HISTORY_EXCEEDED = 'SET_MAX_UNDO_HISTORY_EXCEEDED';
+ export function setMaxUndoHistoryExceeded(maxUndoHistoryExceeded = true) {
+diff --git a/superset-frontend/src/dashboard/actions/hydrate.js b/superset-frontend/src/dashboard/actions/hydrate.js
+index fe41d8aded..116686b6a6 100644
+--- a/superset-frontend/src/dashboard/actions/hydrate.js
++++ b/superset-frontend/src/dashboard/actions/hydrate.js
+@@ -56,7 +56,7 @@ import { FilterBarOrientation } from '../types';
+ export const HYDRATE_DASHBOARD = 'HYDRATE_DASHBOARD';
+
+ export const hydrateDashboard =
+-  ({ history, dashboard, charts, dataMask, activeTabs }) =>
++  ({ history, dashboard, charts, dataMask, activeTabs, chartStates }) =>
+   (dispatch, getState) => {
+     const { user, common, dashboardState } = getState();
+     const { metadata, position_data: positionData } = dashboard;
+@@ -308,6 +308,7 @@ export const hydrateDashboard =
+           activeTabs: activeTabs || dashboardState?.activeTabs || [],
+           datasetsStatus:
+             dashboardState?.datasetsStatus || ResourceStatus.Loading,
++          chartStates: chartStates || dashboardState?.chartStates || {},
+         },
+         dashboardLayout,
+       },
+diff --git a/superset-frontend/src/dashboard/components/URLShortLinkButton/index.tsx b/superset-frontend/src/dashboard/components/URLShortLinkButton/index.tsx
+index a0c24f51f3..592b3da831 100644
+--- a/superset-frontend/src/dashboard/components/URLShortLinkButton/index.tsx
++++ b/superset-frontend/src/dashboard/components/URLShortLinkButton/index.tsx
+@@ -30,6 +30,7 @@ import { useToasts } from 'src/components/MessageToasts/withToasts';
+ import { shallowEqual, useSelector } from 'react-redux';
+ import { RootState } from 'src/dashboard/types';
+ import { Typography } from '@superset-ui/core/components/Typography';
++import { hasAgGridTables } from 'src/dashboard/util/agGridHelpers';
+
+ export type URLShortLinkButtonProps = {
+   dashboardId: number;
+@@ -49,21 +50,31 @@ export default function URLShortLinkButton({
+   const theme = useTheme();
+   const [shortUrl, setShortUrl] = useState('');
+   const { addDangerToast } = useToasts();
+-  const { dataMask, activeTabs } = useSelector(
++  const { dataMask, activeTabs, chartStates, sliceEntities } = useSelector(
+     (state: RootState) => ({
+       dataMask: state.dataMask,
+       activeTabs: state.dashboardState.activeTabs,
++      chartStates: state.dashboardState.chartStates,
++      sliceEntities: state.sliceEntities?.slices,
+     }),
+     shallowEqual,
+   );
+
+   const getCopyUrl = async () => {
+     try {
++      // Check if dashboard has AG Grid tables (Table V2)
++      const includeChartState =
++        hasAgGridTables(sliceEntities) &&
++        chartStates &&
++        Object.keys(chartStates).length > 0;
++
+       const url = await getDashboardPermalink({
+         dashboardId,
+         dataMask,
+         activeTabs,
+         anchor: anchorLinkId,
++        chartStates: includeChartState ? chartStates : undefined,
++        includeChartState,
+       });
+       setShortUrl(url);
+     } catch (error) {
+diff --git a/superset-frontend/src/dashboard/components/gridComponents/Chart/Chart.jsx b/superset-frontend/src/dashboard/components/gridComponents/Chart/Chart.jsx
+index d81a6ed0f2..346d30a720 100644
+--- a/superset-frontend/src/dashboard/components/gridComponents/Chart/Chart.jsx
++++ b/superset-frontend/src/dashboard/components/gridComponents/Chart/Chart.jsx
+@@ -49,6 +49,7 @@ import {
+   setFocusedFilterField,
+   toggleExpandSlice,
+   unsetFocusedFilterField,
++  updateChartState,
+ } from '../../../actions/dashboardState';
+ import { changeFilter } from '../../../actions/dashboardFilters';
+ import { refreshChart } from '../../../../components/Chart/chartAction';
+@@ -200,6 +201,16 @@ const Chart = props => {
+     [boundActionCreators.logEvent, boundActionCreators.changeFilter, chart.id],
+   );
+
++  // Chart state handler for AG Grid tables
++  const handleChartStateChange = useCallback(
++    chartState => {
++      if (slice?.viz_type === 'ag-grid-table') {
++        dispatch(updateChartState(props.id, slice.viz_type, chartState));
++      }
++    },
++    [dispatch, props.id, slice?.viz_type],
++  );
++
+   useEffect(() => {
+     if (isExpanded) {
+       const descriptionHeight =
+@@ -277,6 +288,9 @@ const Chart = props => {
+   const allSliceIds = useSelector(state => state.dashboardState.sliceIds);
+   const nativeFilters = useSelector(state => state.nativeFilters?.filters);
+   const dataMask = useSelector(state => state.dataMask);
++  const chartStates = useSelector(
++    state => state.dashboardState.chartStates || EMPTY_OBJECT,
++  );
+   const labelsColor = useSelector(
+     state => state.dashboardInfo?.metadata?.label_colors || EMPTY_OBJECT,
+   );
+@@ -378,20 +392,132 @@ const Chart = props => {
+         slice_id: slice.slice_id,
+         is_cached: isCached,
+       });
++
++      let ownState = dataMask[props.id]?.ownState || {};
++
++      // For AG Grid tables, convert AG Grid state to backend-compatible format
++      if (slice.viz_type === 'ag-grid-table' && chartStates[props.id]?.state) {
++        const agGridState = chartStates[props.id].state;
++
++        // Convert AG Grid sortModel to backend sortBy format
++        if (agGridState.sortModel && agGridState.sortModel.length > 0) {
++          const sortItem = agGridState.sortModel[0];
++          ownState = {
++            ...ownState,
++            sortBy: [
++              {
++                id: sortItem.colId,
++                key: sortItem.colId,
++                desc: sortItem.sort === 'desc',
++              },
++            ],
++          };
++        }
++
++        // Store column order for backend processing
++        if (agGridState.columnState && agGridState.columnState.length > 0) {
++          ownState = {
++            ...ownState,
++            columnOrder: agGridState.columnState.map(col => col.colId),
++          };
++        }
++
++        if (
++          agGridState.filterModel &&
++          Object.keys(agGridState.filterModel).length > 0
++        ) {
++          // Map AG Grid filter operators to backend operators
++          const TEXT_FILTER_OPERATORS = {
++            equals: '==',
++            notEqual: '!=',
++            contains: 'ILIKE',
++            notContains: 'NOT ILIKE',
++            startsWith: 'ILIKE',
++            endsWith: 'ILIKE',
++          };
++
++          const NUMBER_FILTER_OPERATORS = {
++            equals: '==',
++            notEqual: '!=',
++            lessThan: '<',
++            lessThanOrEqual: '<=',
++            greaterThan: '>',
++            greaterThanOrEqual: '>=',
++          };
++
++          const getTextComparator = (type, value) => {
++            if (type === 'contains' || type === 'notContains') {
++              return `%${value}%`;
++            }
++            if (type === 'startsWith') {
++              return `${value}%`;
++            }
++            if (type === 'endsWith') {
++              return `%${value}`;
++            }
++            return value;
++          };
++
++          const filters = [];
++
++          Object.keys(agGridState.filterModel).forEach(colId => {
++            const filter = agGridState.filterModel[colId];
++
++            // Text filter
++            if (filter.filterType === 'text' && filter.filter) {
++              filters.push({
++                col: colId,
++                op: TEXT_FILTER_OPERATORS[filter.type] || 'ILIKE',
++                val: getTextComparator(filter.type, filter.filter),
++              });
++            } else if (
++              filter.filterType === 'number' &&
++              filter.filter !== undefined
++            ) {
++              filters.push({
++                col: colId,
++                op: NUMBER_FILTER_OPERATORS[filter.type] || '==',
++                val: filter.filter,
++              });
++            } else if (
++              filter.filterType === 'set' &&
++              Array.isArray(filter.values) &&
++              filter.values.length > 0
++            ) {
++              filters.push({
++                col: colId,
++                op: 'IN',
++                val: filter.values,
++              });
++            }
++          });
++
++          if (filters.length > 0) {
++            ownState = {
++              ...ownState,
++              filters,
++            };
++          }
++        }
++      }
++
+       exportChart({
+         formData: isFullCSV ? { ...formData, row_limit: maxRows } : formData,
+         resultType: isPivot ? 'post_processed' : 'full',
+         resultFormat: format,
+         force: true,
+-        ownState: dataMask[props.id]?.ownState,
++        ownState,
+       });
+     },
+     [
+       slice.slice_id,
++      slice.viz_type,
+       isCached,
+       formData,
+-      props.maxRows,
++      maxRows,
+       dataMask[props.id]?.ownState,
++      chartStates,
++      props.id,
+       boundActionCreators.logEvent,
+     ],
+   );
+@@ -532,7 +658,13 @@ const Chart = props => {
+           formData={formData}
+           labelsColor={labelsColor}
+           labelsColorMap={labelsColorMap}
+-          ownState={dataMask[props.id]?.ownState}
++          ownState={{
++            ...dataMask[props.id]?.ownState,
++            ...(slice.viz_type === 'ag-grid-table' &&
++            chartStates[props.id]?.state
++              ? { savedAgGridState: chartStates[props.id].state }
++              : {}),
++          }}
+           filterState={dataMask[props.id]?.filterState}
+           queriesResponse={chart.queriesResponse}
+           timeout={timeout}
+@@ -542,6 +674,7 @@ const Chart = props => {
+           datasetsStatus={datasetsStatus}
+           isInView={props.isInView}
+           emitCrossFilters={emitCrossFilters}
++          onChartStateChange={handleChartStateChange}
+         />
+       </ChartWrapper>
+     </SliceContainer>
+diff --git a/superset-frontend/src/dashboard/components/menu/ShareMenuItems/index.tsx b/superset-frontend/src/dashboard/components/menu/ShareMenuItems/index.tsx
+index ed1cacc5cd..fa6b7e35a1 100644
+--- a/superset-frontend/src/dashboard/components/menu/ShareMenuItems/index.tsx
++++ b/superset-frontend/src/dashboard/components/menu/ShareMenuItems/index.tsx
+@@ -23,6 +23,7 @@ import { Menu, MenuItem } from '@superset-ui/core/components/Menu';
+ import { getDashboardPermalink } from 'src/utils/urlUtils';
+ import { MenuKeys, RootState } from 'src/dashboard/types';
+ import { shallowEqual, useSelector } from 'react-redux';
++import { hasAgGridTables } from 'src/dashboard/util/agGridHelpers';
+
+ export interface ShareMenuItemProps
+   extends ComponentProps<typeof Menu.SubMenu> {
+@@ -58,20 +59,30 @@ export const useShareMenuItems = (props: ShareMenuItemProps): MenuItem => {
+     disabled,
+     ...rest
+   } = props;
+-  const { dataMask, activeTabs } = useSelector(
++  const { dataMask, activeTabs, chartStates, sliceEntities } = useSelector(
+     (state: RootState) => ({
+       dataMask: state.dataMask,
+       activeTabs: state.dashboardState.activeTabs,
++      chartStates: state.dashboardState.chartStates,
++      sliceEntities: state.sliceEntities?.slices,
+     }),
+     shallowEqual,
+   );
+
+   async function generateUrl() {
++    // Only include chart state for AG Grid tables
++    const includeChartState =
++      hasAgGridTables(sliceEntities) &&
++      chartStates &&
++      Object.keys(chartStates).length > 0;
++
+     return getDashboardPermalink({
+       dashboardId,
+       dataMask,
+       activeTabs,
+       anchor: dashboardComponentId,
++      chartStates: includeChartState ? chartStates : undefined,
++      includeChartState,
+     });
+   }
+
+diff --git a/superset-frontend/src/dashboard/containers/DashboardPage.tsx b/superset-frontend/src/dashboard/containers/DashboardPage.tsx
+index 43dc7a591d..8b26461bfb 100644
+--- a/superset-frontend/src/dashboard/containers/DashboardPage.tsx
++++ b/superset-frontend/src/dashboard/containers/DashboardPage.tsx
+@@ -47,6 +47,7 @@ import {
+ } from 'src/dashboard/components/nativeFilters/FilterBar/keyValue';
+ import DashboardContainer from 'src/dashboard/containers/Dashboard';
+ import CrudThemeProvider from 'src/components/CrudThemeProvider';
++import type { DashboardChartStates } from 'src/dashboard/types/chartState';
+
+ import { nanoid } from 'nanoid';
+ import { RootState } from '../types';
+@@ -174,10 +175,11 @@ export const DashboardPage: FC<PageProps> = ({ idOrSlug }: PageProps) => {
+       // activeTabs is initialized with undefined so that it doesn't override
+       // the currently stored value when hydrating
+       let activeTabs: string[] | undefined;
++      let chartStates: DashboardChartStates | undefined;
+       if (permalinkKey) {
+         const permalinkValue = await getPermalinkValue(permalinkKey);
+         if (permalinkValue) {
+-          ({ dataMask, activeTabs } = permalinkValue.state);
++          ({ dataMask, activeTabs, chartStates } = permalinkValue.state);
+         }
+       } else if (nativeFilterKeyValue) {
+         dataMask = await getFilterValue(id, nativeFilterKeyValue);
+@@ -197,6 +199,7 @@ export const DashboardPage: FC<PageProps> = ({ idOrSlug }: PageProps) => {
+             charts,
+             activeTabs,
+             dataMask,
++            chartStates,
+           }),
+         );
+       }
+diff --git a/superset-frontend/src/dashboard/reducers/dashboardState.js b/superset-frontend/src/dashboard/reducers/dashboardState.js
+index d9444300f9..9336d56388 100644
+--- a/superset-frontend/src/dashboard/reducers/dashboardState.js
++++ b/superset-frontend/src/dashboard/reducers/dashboardState.js
+@@ -50,6 +50,9 @@ import {
+   SET_DASHBOARD_SHARED_LABELS_COLORS_SYNCABLE,
+   SET_DASHBOARD_SHARED_LABELS_COLORS_SYNCED,
+   TOGGLE_NATIVE_FILTERS_BAR,
++  UPDATE_CHART_STATE,
++  REMOVE_CHART_STATE,
++  RESTORE_CHART_STATES,
+ } from '../actions/dashboardState';
+ import { HYDRATE_DASHBOARD } from '../actions/hydrate';
+
+@@ -274,6 +277,37 @@ export default function dashboardStateReducer(state = {}, action) {
+         nativeFiltersBarOpen: action.isOpen,
+       };
+     },
++    [UPDATE_CHART_STATE]() {
++      const { chartId, vizType, chartState, lastModified } = action;
++      return {
++        ...state,
++        chartStates: {
++          ...state.chartStates,
++          [chartId]: {
++            chartId,
++            vizType,
++            state: chartState,
++            lastModified,
++          },
++        },
++      };
++    },
++    [REMOVE_CHART_STATE]() {
++      const { chartId } = action;
++      const updatedChartStates = { ...state.chartStates };
++      delete updatedChartStates[chartId];
++      return {
++        ...state,
++        chartStates: updatedChartStates,
++      };
++    },
++    [RESTORE_CHART_STATES]() {
++      const { chartStates } = action;
++      return {
++        ...state,
++        chartStates: chartStates || {},
++      };
++    },
+   };
+
+   if (action.type in actionHandlers) {
+diff --git a/superset-frontend/src/dashboard/types.ts b/superset-frontend/src/dashboard/types.ts
+index 70028f1eb2..98ea8cae7a 100644
+--- a/superset-frontend/src/dashboard/types.ts
++++ b/superset-frontend/src/dashboard/types.ts
+@@ -123,6 +123,7 @@ export type DashboardState = {
+     dashboardId: number;
+     data: JsonObject;
+   };
++  chartStates?: Record<string, any>;
+ };
+ export type DashboardInfo = {
+   id: number;
+@@ -235,6 +236,7 @@ export interface DashboardPermalinkState {
+   activeTabs: string[];
+   anchor: string;
+   urlParams?: UrlParamEntries;
++  chartStates?: Record<string, any>;
+ }
+
+ export interface DashboardPermalinkValue {
+diff --git a/superset-frontend/src/dashboard/types/chartState.ts b/superset-frontend/src/dashboard/types/chartState.ts
+new file mode 100644
+index 0000000000..7df7be1b22
+--- /dev/null
++++ b/superset-frontend/src/dashboard/types/chartState.ts
+@@ -0,0 +1,45 @@
++/**
++ * Licensed to the Apache Software Foundation (ASF) under one
++ * or more contributor license agreements.  See the NOTICE file
++ * distributed with this work for additional information
++ * regarding copyright ownership.  The ASF licenses this file
++ * to you under the Apache License, Version 2.0 (the
++ * "License"); you may not use this file except in compliance
++ * with the License.  You may obtain a copy of the License at
++ *
++ *   http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing,
++ * software distributed under the License is distributed on an
++ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
++ * KIND, either express or implied.  See the License for the
++ * specific language governing permissions and limitations
++ * under the License.
++ */
++
++// Re-export AG Grid types from @superset-ui/core for convenience
++import type { AgGridChartState } from '@superset-ui/core';
++
++export type {
++  AgGridColumnState,
++  AgGridSortModel,
++  AgGridFilterModel,
++  AgGridChartState,
++  AgGridQueryFilterClause,
++} from '@superset-ui/core';
++export {
++  AgGridFilterType,
++  AgGridTextFilterOperator,
++  AgGridNumberFilterOperator,
++} from '@superset-ui/core';
++
++export interface ChartState {
++  chartId: number;
++  vizType: string;
++  state: AgGridChartState;
++  lastModified?: number;
++}
++
++export interface DashboardChartStates {
++  [chartId: string]: ChartState;
++}
+diff --git a/superset-frontend/src/dashboard/util/agGridHelpers.ts b/superset-frontend/src/dashboard/util/agGridHelpers.ts
+new file mode 100644
+index 0000000000..384a863032
+--- /dev/null
++++ b/superset-frontend/src/dashboard/util/agGridHelpers.ts
+@@ -0,0 +1,39 @@
++/**
++ * Licensed to the Apache Software Foundation (ASF) under one
++ * or more contributor license agreements.  See the NOTICE file
++ * distributed with this work for additional information
++ * regarding copyright ownership.  The ASF licenses this file
++ * to you under the Apache License, Version 2.0 (the
++ * "License"); you may not use this file except in compliance
++ * with the License.  You may obtain a copy of the License at
++ *
++ *   http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing,
++ * software distributed under the License is distributed on an
++ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
++ * KIND, either express or implied.  See the License for the
++ * specific language governing permissions and limitations
++ * under the License.
++ */
++
++/**
++ * Check if a dashboard contains any AG Grid table charts
++ * @param sliceEntities - The slice entities object from Redux state
++ * @returns true if at least one AG Grid table chart exists
++ */
++export function hasAgGridTables(
++  sliceEntities: Record<string, any> | null | undefined,
++): boolean {
++  if (!sliceEntities) {
++    return false;
++  }
++
++  return Object.values(sliceEntities).some(
++    slice =>
++      slice &&
++      typeof slice === 'object' &&
++      'viz_type' in slice &&
++      slice.viz_type === 'ag-grid-table',
++  );
++}
+diff --git a/superset-frontend/src/embedded/api.tsx b/superset-frontend/src/embedded/api.tsx
+index 2665916758..f0bb3e687a 100644
+--- a/superset-frontend/src/embedded/api.tsx
++++ b/superset-frontend/src/embedded/api.tsx
+@@ -20,6 +20,8 @@ import { DataMaskStateWithId } from '@superset-ui/core';
+ import getBootstrapData from 'src/utils/getBootstrapData';
+ import { store } from '../views/store';
+ import { getDashboardPermalink as getDashboardPermalinkUtil } from '../utils/urlUtils';
++import { DashboardChartStates } from '../dashboard/types/chartState';
++import { hasAgGridTables } from '../dashboard/util/agGridHelpers';
+
+ const bootstrapData = getBootstrapData();
+
+@@ -33,6 +35,7 @@ type EmbeddedSupersetApi = {
+   getDashboardPermalink: ({ anchor }: { anchor: string }) => Promise<string>;
+   getActiveTabs: () => string[];
+   getDataMask: () => DataMaskStateWithId;
++  getChartStates: () => DashboardChartStates;
+ };
+
+ const getScrollSize = (): Size => ({
+@@ -46,18 +49,27 @@ const getDashboardPermalink = async ({
+   anchor: string;
+ }): Promise<string> => {
+   const state = store?.getState();
+-  const { dashboardId, dataMask, activeTabs } = {
++  const { dashboardId, dataMask, activeTabs, chartStates, sliceEntities } = {
+     dashboardId:
+       state?.dashboardInfo?.id || bootstrapData?.embedded!.dashboard_id,
+     dataMask: state?.dataMask,
+     activeTabs: state.dashboardState?.activeTabs,
++    chartStates: state.dashboardState?.chartStates,
++    sliceEntities: state?.sliceEntities?.slices,
+   };
+
++  const includeChartState =
++    hasAgGridTables(sliceEntities) &&
++    chartStates &&
++    Object.keys(chartStates).length > 0;
++
+   return getDashboardPermalinkUtil({
+     dashboardId,
+     dataMask,
+     activeTabs,
+     anchor,
++    chartStates: includeChartState ? chartStates : undefined,
++    includeChartState,
+   });
+ };
+
+@@ -65,9 +77,13 @@ const getActiveTabs = () => store?.getState()?.dashboardState?.activeTabs || [];
+
+ const getDataMask = () => store?.getState()?.dataMask || {};
+
++const getChartStates = () =>
++  store?.getState()?.dashboardState?.chartStates || {};
++
+ export const embeddedApi: EmbeddedSupersetApi = {
+   getScrollSize,
+   getDashboardPermalink,
+   getActiveTabs,
+   getDataMask,
++  getChartStates,
+ };
+diff --git a/superset-frontend/src/embedded/index.tsx b/superset-frontend/src/embedded/index.tsx
+index 9f9123909c..cc56b84db5 100644
+--- a/superset-frontend/src/embedded/index.tsx
++++ b/superset-frontend/src/embedded/index.tsx
+@@ -250,6 +250,7 @@ window.addEventListener('message', function embeddedPageInitializer(event) {
+     );
+     Switchboard.defineMethod('getActiveTabs', embeddedApi.getActiveTabs);
+     Switchboard.defineMethod('getDataMask', embeddedApi.getDataMask);
++    Switchboard.defineMethod('getChartStates', embeddedApi.getChartStates);
+     Switchboard.defineMethod(
+       'setThemeConfig',
+       (payload: { themeConfig: SupersetThemeConfig }) => {
+diff --git a/superset-frontend/src/utils/urlUtils.ts b/superset-frontend/src/utils/urlUtils.ts
+index 80e8948d22..7b094b8484 100644
+--- a/superset-frontend/src/utils/urlUtils.ts
++++ b/superset-frontend/src/utils/urlUtils.ts
+@@ -161,6 +161,8 @@ export function getDashboardPermalink({
+   dataMask,
+   activeTabs,
+   anchor, // the anchor part of the link which corresponds to the tab/chart id
++  chartStates, // chart-level customizations (optional)
++  includeChartState = false, // whether to include chart state in permalink (FALSE by default)
+ }: {
+   dashboardId: string | number;
+   /**
+@@ -176,14 +178,28 @@ export function getDashboardPermalink({
+    * and highlighted upon page load.
+    */
+   anchor?: string;
++  /**
++   * Chart-level state (column order, sorting, filtering, etc.)
++   */
++  chartStates?: JsonObject;
++  /**
++   * Whether to include chart state in the permalink (default: false)
++   */
++  includeChartState?: boolean;
+ }) {
+-  // only encode filter state if non-empty
+-  return getPermalink(`/api/v1/dashboard/${dashboardId}/permalink`, {
++  const payload: JsonObject = {
+     urlParams: getDashboardUrlParams(),
+     dataMask,
+     activeTabs,
+     anchor,
+-  });
++  };
++
++  // Only include chart states when explicitly requested AND when they exist
++  if (includeChartState && chartStates && Object.keys(chartStates).length > 0) {
++    payload.chartStates = chartStates;
++  }
++
++  return getPermalink(`/api/v1/dashboard/${dashboardId}/permalink`, payload);
+ }
+
+ const externalUrlRegex =
+diff --git a/superset/charts/schemas.py b/superset/charts/schemas.py
+index 2e3dec7fd8..1a8b9f7be8 100644
+--- a/superset/charts/schemas.py
++++ b/superset/charts/schemas.py
+@@ -1018,6 +1018,27 @@ class ChartDataExtrasSchema(Schema):
+         },
+         allow_none=True,
+     )
++    is_ag_grid_chart = fields.Boolean(
++        metadata={
++            "description": (
++                "Flag indicating if the query is from an AG Grid table chart. "
++                "When true, enables filtering on metric columns in addition "
++                "to dimension columns."
++            )
++        },
++        allow_none=True,
++    )
++    column_order = fields.List(
++        fields.String(),
++        metadata={
++            "description": (
++                "Ordered list of column names for AG Grid table exports. "
++                "Used to preserve user's column reordering (including mixed "
++                "columns and metrics)"
++            )
++        },
++        allow_none=True,
++    )
+
+
+ class AnnotationLayerSchema(Schema):
+diff --git a/superset/connectors/sqla/models.py b/superset/connectors/sqla/models.py
+index 9749d07675..51e28ceee7 100644
+--- a/superset/connectors/sqla/models.py
++++ b/superset/connectors/sqla/models.py
+@@ -1629,6 +1629,19 @@ class SqlaTable(
+                 if len(df.columns) > len(labels_expected):
+                     df = df.iloc[:, 0 : len(labels_expected)]
+                 df.columns = labels_expected
++
++                extras = query_obj.get("extras", {})
++                if extras.get("is_ag_grid_chart"):
++                    column_order = extras.get("column_order")
++                    if column_order and isinstance(column_order, list):
++                        existing_cols = [
++                            col for col in column_order if col in df.columns
++                        ]
++                        remaining_cols = [
++                            col for col in df.columns if col not in existing_cols
++                        ]
++                        final_order = existing_cols + remaining_cols
++                        df = df[final_order]
+             return df
+
+         try:
+diff --git a/superset/dashboards/permalink/schemas.py b/superset/dashboards/permalink/schemas.py
+index c3b81632db..71d32344e3 100644
+--- a/superset/dashboards/permalink/schemas.py
++++ b/superset/dashboards/permalink/schemas.py
+@@ -52,6 +52,16 @@ class DashboardPermalinkStateSchema(Schema):
+         allow_none=True,
+         metadata={"description": "Optional anchor link added to url hash"},
+     )
++    chartStates = fields.Dict(  # noqa: N815
++        required=False,
++        allow_none=True,
++        metadata={
++            "description": (
++                "Chart-level state for AG Grid tables "
++                "(column order, sorting, filtering)"
++            )
++        },
++    )
+
+
+ class DashboardPermalinkSchema(Schema):
+diff --git a/superset/dashboards/permalink/types.py b/superset/dashboards/permalink/types.py
+index 4961d2a17b..c1a3d27c51 100644
+--- a/superset/dashboards/permalink/types.py
++++ b/superset/dashboards/permalink/types.py
+@@ -17,11 +17,12 @@
+ from typing import Any, Optional, TypedDict
+
+
+-class DashboardPermalinkState(TypedDict):
++class DashboardPermalinkState(TypedDict, total=False):
+     dataMask: Optional[dict[str, Any]]
+     activeTabs: Optional[list[str]]
+     anchor: Optional[str]
+     urlParams: Optional[list[tuple[str, str]]]
++    chartStates: Optional[dict[str, Any]]
+
+
+ class DashboardPermalinkValue(TypedDict):
+diff --git a/superset/models/helpers.py b/superset/models/helpers.py
+index 88230d7bc9..2f405b23ef 100644
+--- a/superset/models/helpers.py
++++ b/superset/models/helpers.py
+@@ -2035,8 +2035,8 @@ class ExploreMixin:  # pylint: disable=too-many-public-methods
+         if groupby_all_columns:
+             qry = qry.group_by(*groupby_all_columns.values())
+
+-        where_clause_and = []
+-        having_clause_and = []
++        where_clause_and: list[ColumnElement] = []
++        having_clause_and: list[ColumnElement] = []
+
+         for flt in filter:  # type: ignore
+             if not all(flt.get(s) for s in ["col", "op"]):
+@@ -2047,6 +2047,9 @@ class ExploreMixin:  # pylint: disable=too-many-public-methods
+             op = utils.FilterOperator(flt["op"].upper())
+             col_obj: Optional["TableColumn"] = None
+             sqla_col: Optional[Column] = None
++            is_metric_filter = (
++                False  # Track if this is a filter on a metric (needs HAVING clause)
++            )
+             if flt_col == utils.DTTM_ALIAS and is_timeseries and dttm_col:
+                 col_obj = dttm_col
+             elif is_adhoc_column(flt_col):
+@@ -2057,13 +2060,33 @@ class ExploreMixin:  # pylint: disable=too-many-public-methods
+                     rejected_adhoc_filters_columns.append(flt_col)
+                     continue
+             else:
++                # Check if it's a regular column first
+                 col_obj = columns_by_name.get(cast(str, flt_col))
++                # If not found in columns, check if it's a metric
++                # This supports AG Grid table filters on metric columns
++                if (
++                    col_obj is None
++                    and extras.get("is_ag_grid_chart")
++                    and isinstance(flt_col, str)
++                    and flt_col in metrics_by_name
++                ):
++                    # Convert metric to SQLA column expression
++                    sqla_col = metrics_by_name[flt_col].get_sqla_col(
++                        template_processor=template_processor
++                    )
++                    is_metric_filter = True
+             filter_grain = flt.get("grain")
+
+             if get_column_name(flt_col) in removed_filters:
+                 # Skip generating SQLA filter when the jinja template handles it.
+                 continue
+
++            # Determine which clause list to use: HAVING for metrics, WHERE for columns
++            # Metric filters use HAVING clause because they involve aggregate functions
++            target_clause_list = (
++                having_clause_and if is_metric_filter else where_clause_and
++            )
++
+             if col_obj or sqla_col is not None:
+                 if sqla_col is not None:
+                     pass
+@@ -2121,7 +2144,7 @@ class ExploreMixin:  # pylint: disable=too-many-public-methods
+                             _(bus_resp["error_message"])
+                         )
+
+-                    where_clause_and.append(
++                    target_clause_list.append(
+                         ADVANCED_DATA_TYPES[col_advanced_data_type].translate_filter(
+                             sqla_col, op, bus_resp["values"]
+                         )
+@@ -2144,20 +2167,20 @@ class ExploreMixin:  # pylint: disable=too-many-public-methods
+                         cond = sqla_col.in_(eq)
+                     if op == utils.FilterOperator.NOT_IN:
+                         cond = ~cond
+-                    where_clause_and.append(cond)
++                    target_clause_list.append(cond)
+                 elif op in {
+                     utils.FilterOperator.IS_NULL,
+                     utils.FilterOperator.IS_NOT_NULL,
+                 }:
+-                    where_clause_and.append(
++                    target_clause_list.append(
+                         db_engine_spec.handle_null_filter(sqla_col, op)
+                     )
+                 elif op == utils.FilterOperator.IS_TRUE:
+-                    where_clause_and.append(
++                    target_clause_list.append(
+                         db_engine_spec.handle_boolean_filter(sqla_col, op, True)
+                     )
+                 elif op == utils.FilterOperator.IS_FALSE:
+-                    where_clause_and.append(
++                    target_clause_list.append(
+                         db_engine_spec.handle_boolean_filter(sqla_col, op, False)
+                     )
+                 else:
+@@ -2183,7 +2206,7 @@ class ExploreMixin:  # pylint: disable=too-many-public-methods
+                         utils.FilterOperator.GREATER_THAN_OR_EQUALS,
+                         utils.FilterOperator.LESS_THAN_OR_EQUALS,
+                     }:
+-                        where_clause_and.append(
++                        target_clause_list.append(
+                             db_engine_spec.handle_comparison_filter(sqla_col, op, eq)
+                         )
+                     elif op in {
+@@ -2194,14 +2217,14 @@ class ExploreMixin:  # pylint: disable=too-many-public-methods
+                             sqla_col = sa.cast(sqla_col, sa.String)
+
+                         if op == utils.FilterOperator.LIKE:
+-                            where_clause_and.append(sqla_col.like(eq))
++                            target_clause_list.append(sqla_col.like(eq))
+                         else:
+-                            where_clause_and.append(sqla_col.ilike(eq))
++                            target_clause_list.append(sqla_col.ilike(eq))
+                     elif op in {utils.FilterOperator.NOT_LIKE}:
+                         if target_generic_type != GenericDataType.STRING:
+                             sqla_col = sa.cast(sqla_col, sa.String)
+
+-                        where_clause_and.append(sqla_col.not_like(eq))
++                        target_clause_list.append(sqla_col.not_like(eq))
+                     elif (
+                         op == utils.FilterOperator.TEMPORAL_RANGE
+                         and isinstance(eq, str)
+@@ -2212,7 +2235,7 @@ class ExploreMixin:  # pylint: disable=too-many-public-methods
+                             time_shift=time_shift,
+                             extras=extras,
+                         )
+-                        where_clause_and.append(
++                        target_clause_list.append(
+                             self.get_time_filter(
+                                 time_col=col_obj,
+                                 start_dttm=_since,
+@@ -2226,6 +2249,10 @@ class ExploreMixin:  # pylint: disable=too-many-public-methods
+                         raise QueryObjectValidationError(
+                             _("Invalid filter operation type: %(op)s", op=op)
+                         )
++            else:
++                # col_obj is None and sqla_col is None - column not found!
++                # Silently skip - this can happen for removed columns or invalid filters
++                pass
+         where_clause_and += self.get_sqla_row_level_filters(template_processor)
+         if extras:
+             where = extras.get("where")
+@@ -2253,6 +2280,7 @@ class ExploreMixin:  # pylint: disable=too-many-public-methods
+             qry = qry.where(
+                 self.get_fetch_values_predicate(template_processor=template_processor)
+             )
++
+         if granularity:
+             qry = qry.where(and_(*(time_filters + where_clause_and)))
+         else:
