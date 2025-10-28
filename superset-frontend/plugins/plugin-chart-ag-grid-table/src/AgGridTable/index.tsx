@@ -42,7 +42,13 @@ import {
   CellClickedEvent,
   IMenuActionParams,
 } from '@superset-ui/core/components/ThemedAgGridReact';
-import { JsonObject, DataRecordValue, DataRecord, t } from '@superset-ui/core';
+import {
+  AgGridChartState,
+  DataRecordValue,
+  DataRecord,
+  JsonObject,
+  t,
+} from '@superset-ui/core';
 import { SearchOutlined } from '@ant-design/icons';
 import { debounce, isEqual } from 'lodash';
 import Pagination from './components/Pagination';
@@ -55,6 +61,12 @@ export interface AgGridState extends Partial<GridState> {
   timestamp?: number;
   hasChanges?: boolean;
 }
+
+// AgGridChartState with optional metadata fields for state change events
+export type AgGridChartStateWithMetadata = Partial<AgGridChartState> & {
+  timestamp?: number;
+  hasChanges?: boolean;
+};
 
 export interface AgGridTableProps {
   gridTheme?: string;
@@ -87,9 +99,9 @@ export interface AgGridTableProps {
   cleanedTotals: DataRecord;
   showTotals: boolean;
   width: number;
-  onColumnStateChange?: (state: AgGridState) => void;
+  onColumnStateChange?: (state: AgGridChartStateWithMetadata) => void;
   gridRef?: RefObject<AgGridReact>;
-  savedAgGridState?: JsonObject;
+  chartState?: AgGridChartState;
 }
 
 ModuleRegistry.registerModules([AllCommunityModule, ClientSideRowModelModule]);
@@ -125,7 +137,7 @@ const AgGridDataTable: FunctionComponent<AgGridTableProps> = memo(
     showTotals,
     width,
     onColumnStateChange,
-    savedAgGridState,
+    chartState,
   }) => {
     const gridRef = useRef<AgGridReact>(null);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -224,6 +236,34 @@ const AgGridDataTable: FunctionComponent<AgGridTableProps> = memo(
 
       if (!isSortable) return;
 
+      if (serverPagination && gridRef.current?.api && onColumnStateChange) {
+        const { api } = gridRef.current;
+
+        if (sortDir == null) {
+          api.applyColumnState({
+            defaultState: { sort: null },
+          });
+        } else {
+          api.applyColumnState({
+            defaultState: { sort: null },
+            state: [{ colId, sort: sortDir as 'asc' | 'desc', sortIndex: 0 }],
+          });
+        }
+
+        const columnState = api.getColumnState?.() || [];
+        const filterModel = api.getFilterModel?.() || {};
+        const sortModel = sortDir
+          ? [{ colId, sort: sortDir as 'asc' | 'desc', sortIndex: 0 }]
+          : [];
+
+        onColumnStateChange({
+          columnState,
+          sortModel,
+          filterModel,
+          timestamp: Date.now(),
+        });
+      }
+
       if (sortDir == null) {
         onSortChange([]);
         return;
@@ -261,7 +301,7 @@ const AgGridDataTable: FunctionComponent<AgGridTableProps> = memo(
               .filter(col => col.sort)
               .map(col => ({
                 colId: col.colId,
-                sort: col.sort,
+                sort: col.sort as 'asc' | 'desc',
                 sortIndex: col.sortIndex || 0,
               }))
               .sort((a, b) => (a.sortIndex || 0) - (b.sortIndex || 0));
@@ -321,17 +361,17 @@ const AgGridDataTable: FunctionComponent<AgGridTableProps> = memo(
       params.api.sizeColumnsToFit();
 
       // Restore saved AG Grid state from permalink if available
-      if (savedAgGridState && params.api) {
+      if (chartState && params.api) {
         try {
-          if (savedAgGridState.columnState) {
+          if (chartState.columnState) {
             params.api.applyColumnState?.({
-              state: savedAgGridState.columnState as ColumnState[],
+              state: chartState.columnState as ColumnState[],
               applyOrder: true,
             });
           }
 
-          if (savedAgGridState.filterModel) {
-            params.api.setFilterModel?.(savedAgGridState.filterModel);
+          if (chartState.filterModel) {
+            params.api.setFilterModel?.(chartState.filterModel);
           }
         } catch {
           // Silently fail if state restoration fails
